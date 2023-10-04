@@ -1,0 +1,18 @@
+# vim: set fenc=utf-8 ft=dosini:
+# see: https://github.com/skywind3000/asynctasks.vim/wiki/Task-Config
+
+[build]
+cwd=$(VIM_ROOT)
+command=xmake
+output=quickui
+save=2
+
+[run]
+cwd=$(VIM_ROOT)
+command=xmake && xmake r ngs7
+
+[test]
+cwd=$(VIM_ROOT)
+command=xmake b tests && xmake r tests
+
+

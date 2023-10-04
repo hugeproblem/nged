@@ -1,0 +1,34 @@
+﻿Language: Cpp
+BasedOnStyle: Mozilla
+BreakBeforeBraces: Mozilla
+UseTab: Never
+TabWidth: 2
+IndentWidth: 2
+ColumnLimit: 99
+
+AccessModifierOffset: -2
+AlignAfterOpenBracket: AlwaysBreak
+#AlignConsecutiveAssignments: true
+#AlignConsecutiveDeclarations: true
+AlignEscapedNewlines: Left
+#AlignOperands: true
+AllowShortBlocksOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: false
+AllowShortLoopsOnASingleLine: false
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakAfterReturnType: None
+
+BreakConstructorInitializers: BeforeComma
+BreakInheritanceList: BeforeComma
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 2
+Cpp11BracedListStyle: true
+IndentCaseLabels: false
+SortIncludes: false
+SpaceBeforeParens: ControlStatements
+SpaceInEmptyParentheses: false
+SpacesInAngles: false
+SpacesInParentheses: false

@@ -1,0 +1,32 @@
+[submodule "deps/imgui"]
+	path = deps/imgui
+	url = https://github.com/ocornut/imgui.git
+	branch = docking
+[submodule "deps/spdlog"]
+	path = deps/spdlog
+	url = https://github.com/gabime/spdlog.git
+[submodule "deps/nativefiledialog"]
+	path = deps/nativefiledialog
+	url = https://github.com/mlabbe/nativefiledialog.git
+[submodule "deps/boxer"]
+	path = deps/boxer
+	url = https://github.com/find/Boxer.git
+
+[submodule "deps/parallel_hashmap"]
+	path = deps/parallel_hashmap
+	url = https://github.com/greg7mdp/parallel-hashmap
+[submodule "deps/doctest"]
+	path = deps/doctest
+	url = https://github.com/doctest/doctest.git
+[submodule "deps/subprocess.h"]
+	path = deps/subprocess.h
+	url = https://github.com/sheredom/subprocess.h
+[submodule "deps/pybind11"]
+	path = deps/pybind11
+	url = https://github.com/pybind/pybind11.git
+[submodule "deps/lua"]
+	path = deps/lua
+	url = https://github.com/lua/lua
+[submodule "deps/sol2"]
+	path = deps/sol2
+	url = https://github.com/ThePhD/sol2

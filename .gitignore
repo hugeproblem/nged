@@ -1,0 +1,15 @@
+.build/
+build/
+.clangd/
+.xmake/
+.cache/
+.vscode/
+vs20??/
+vsxmake*/
+dist/
+*.egg-info/
+python311/site/
+__pycache__/
+tags
+compile_commands.json
+settings.lua

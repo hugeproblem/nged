@@ -1,0 +1,28 @@
+==========
+ FEATURES
+==========
+
+[X] Nodes & Links
+[X] Subgraphs
+[X] Re-routes
+[X] Zooming
+[X] Cut Links
+[X] Multi view into single doc
+[X] Copy / Paste
+[X] Save / Load
+[X] Undo / Redo
+[X] Comments / Drawings
+[X] Find nodes
+[@] Groups / Folding
+[X] Inspectors
+[ ] Customizable parm interface
+[X] Colors
+[/] Flags (Bypass / Verbose / Danger / Prompt / ...)
+[X] Pythong Scripting
+[X] Edit events
+[ ] Async execution
+[X] Read only mode
+[ ] Embedable
+[ ] Common policies & Sanity checks
+[X] Headless mode
+[ ] Build as DLL
