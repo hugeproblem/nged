@@ -30,3 +30,6 @@
 [submodule "deps/sol2"]
 	path = deps/sol2
 	url = https://github.com/ThePhD/sol2
+[submodule "deps/s7"]
+	path = deps/s7
+	url = https://cm-gitlab.stanford.edu/bil/s7.git

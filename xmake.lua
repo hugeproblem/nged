@@ -127,8 +127,9 @@ target('boxer')
 
 target('s7')
   set_kind('static')
-  add_headerfiles('ngs7/s7.h', 'ngs7/s7-extensions.h')
-  add_files      ('ngs7/s7.c', 'ngs7/s7-extensions.cpp')
+  add_includedirs('deps/s7', {public=true})
+  add_headerfiles('deps/s7/s7.h', 'ngs7/s7-extensions.h')
+  add_files      ('deps/s7/s7.c', 'ngs7/s7-extensions.cpp')
   if is_plat('linux') then
     add_links('dl')
   end
