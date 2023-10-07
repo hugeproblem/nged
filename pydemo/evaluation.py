@@ -81,7 +81,7 @@ class PreparedGraph:
 
     def getInputs(self, nodeid: ItemID, padding: int = 0) -> list[PreparedNode]:
         node = self.nodelut[nodeid]
-        inputs = [self.nodes[i].executor for i in node.inputs]
+        inputs = [self.nodes[i].executor if i>=0 else None for i in node.inputs]
         if padding > len(inputs):
             for i in range(padding - len(inputs)):
                 inputs.append(None)
@@ -233,6 +233,8 @@ class GraphEvaluationContext:
 
     def fetchInput(self, nodeid: ItemID, i: int):
         inputs = self.preparedGraph.getInputs(nodeid)
+        if inputs[i] is None:
+            return None
         return self.getResult(inputs[i].nodeid)
 
     def ignoreInput(self, nodeid: ItemID, i: int):

@@ -76,9 +76,11 @@ class MyNodeFactory: public nged::NodeFactory
       ret(context, "demo", d.type, d.type);
   }
 };
+
 TEST_CASE("Graph Creation") {
   auto itemfactory = nged::defaultGraphItemFactory();
   nged::NodeGraphDoc doc(std::make_shared<MyNodeFactory>(), itemfactory.get());
+  doc.makeRoot();
   auto graph = doc.root();
   auto id = graph->add(nged::GraphItemPtr(doc.nodeFactory()->createNode(graph.get(), "null")));
   CHECK(id != nged::ID_None);
@@ -98,7 +100,24 @@ TEST_CASE("Graph Creation") {
   subgraph->createNode("null");
   CHECK(doc.numItems() == 5); // null, exec, link, subgraph, null
 
+  SUBCASE("Graph Traverse") {
+    auto exec = subgraph->createNode("exec");
+    auto in1 = subgraph->createNode("null");
+    auto in2 = subgraph->createNode("null");
+    subgraph->setLink(in1->id(), 0, exec->id(), 0);
+    subgraph->setLink(in2->id(), 0, exec->id(), 2);
+    nged::GraphTraverseResult tr;
+    CHECK(subgraph->travelBottomUp(tr, exec->id()));
+    CHECK(tr.size() == 3);
+    CHECK(tr.node(0) == exec.get());
+    CHECK(tr.inputCount(0) == 3);
+    CHECK(tr.inputOf(0, 0) == in1.get());
+    CHECK(tr.inputOf(0, 1) == nullptr);
+    CHECK(tr.inputOf(0, 2) == in2.get());
+  }
+
   graph->remove({subgraphnode->id()});
   subgraphnode.reset();
   CHECK(doc.numItems() == 3); // subgraph and its content should be gone.
 }
+
