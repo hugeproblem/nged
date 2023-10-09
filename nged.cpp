@@ -206,7 +206,7 @@ Node* NetworkView::solySelectedNode() const
   return solyNode;
 }
 
-int NetworkView::zCompare(GraphItem* lhs, GraphItem* rhs)
+int NetworkView::zCompare(GraphItem* lhs, GraphItem* rhs) const
 {
   if (!lhs)
     return -1;
@@ -459,7 +459,7 @@ bool NetworkView::copyTo(Json& json)
 bool NetworkView::pasteFrom(Json const& json)
 {
   auto                   edgroup = doc_->editGroup("paste");
-  std::map<sint, ItemID> idmap; // from old id to new id
+  HashMap<size_t, ItemID> idmap; // from old id to new id
   HashSet<ItemID>        newitems;
   auto                   graphSharedPtr = graph();
   auto                   graphRawPtr    = graphSharedPtr.get();
@@ -536,7 +536,7 @@ bool NetworkView::pasteFrom(Json const& json)
 
   for (auto id : newitems) {
     if (auto* group = graphRawPtr->get(id)->asGroupBox())
-      group->resetContainingItems();
+      group->remapItems(idmap);
   }
   selectedItems_ = std::move(newitems);
   for (auto id: selectedItems_)
@@ -1415,6 +1415,37 @@ ItemID NodeGraphEditor::addItem(Graph* graph, GraphItemPtr itemptr)
   if (responser_)
     responser_->afterItemAdded(graph, itemptr.get());
   return id;
+}
+
+void NodeGraphEditor::confirmItemPlacements(Graph* graph, HashSet<ItemID> const& items)
+{
+  if (responser_) {
+    for (auto id: items) {
+      auto itemptr = graph->get(id);
+      responser_->onItemMoved(itemptr.get());
+    }
+  }
+  for (auto id: graph->items()) {
+    auto itemptr = graph->get(id);
+    if (auto* group = itemptr->asGroupBox()) {
+      for (auto movedid: items) {
+        if (id == movedid)
+          continue;
+        auto moveditem = graph->get(movedid);
+        if (group->aabb().contains(moveditem->aabb()))
+          group->insertItem(movedid);
+        else
+          group->eraseItem(movedid);
+      }
+    }
+  }
+}
+
+bool NodeGraphEditor::moveItems(Graph* graph, HashSet<ItemID> const& items, Vec2 delta)
+{
+  graph->move(items, delta);
+  confirmItemPlacements(graph, items);
+  return true;
 }
 
 void NodeGraphEditor::removeItems(Graph* graph, HashSet<ItemID> const& items, HashSet<ItemID>* remaining)

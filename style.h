@@ -29,6 +29,7 @@ struct UIStyle
   float    normalFontSize           = 18;
   float    smallFontSize            = 14;
   float    commandPaletteWidthRatio = 0.75f; // width / parent window width
+  float    groupboxHeaderHeight     = 12.f;
 
 public:
   static UIStyle& instance();

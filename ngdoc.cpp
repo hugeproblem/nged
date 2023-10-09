@@ -413,6 +413,11 @@ bool GroupBox::serialize(Json& json) const
   if (!ResizableBox::serialize(json))
     return false;
   to_json(json["bgcolor"], backgroundColor_);
+  Vector<size_t> values;
+  values.reserve(containingItems_.size());
+  for (auto id: containingItems())
+    values.push_back(id.value());
+  json["contains"] = values;
   return true;
 }
 
@@ -421,10 +426,39 @@ bool GroupBox::deserialize(Json const& json)
   if (!ResizableBox::deserialize(json))
     return false;
   from_json(json.at("bgcolor"), backgroundColor_);
+  if (auto contains = json.find("contains"); contains != json.end()) {
+    Vector<size_t> values = *contains;
+    containingItems_.clear();
+    for (auto v: values)
+      containingItems_.insert(ItemID(v));
+  }
   return true;
 }
 
-void GroupBox::resetContainingItems()
+void GroupBox::remapItems(HashMap<size_t, ItemID> const& idmap)
+{
+  HashSet<ItemID> remapedItems;
+  for (auto&& id: containingItems_) {
+    if (auto itr = idmap.find(id.value()); itr != idmap.end()) {
+      remapedItems.insert(itr->second);
+    } else {
+      msghub::warnf("{} is not in id map", id.value());
+    }
+  }
+  containingItems_ = std::move(remapedItems);
+}
+
+void GroupBox::insertItem(ItemID id)
+{
+  containingItems_.insert(id);
+}
+
+void GroupBox::eraseItem(ItemID id)
+{
+  containingItems_.erase(id);
+}
+
+void GroupBox::rescanContainingItems()
 {
   containingItems_.clear();
   auto bounds = aabb();
@@ -439,10 +473,17 @@ void GroupBox::resetContainingItems()
   }
 }
 
+bool GroupBox::hitTest(Vec2 point) const
+{
+  auto bb = aabb();
+  bb.max.y = bb.min.y + UIStyle::instance().groupboxHeaderHeight;
+  return bb.contains(point);
+}
+
 void GroupBox::setBounds(AABB absoluteBounds)
 {
   ResizableBox::setBounds(absoluteBounds);
-  resetContainingItems();
+  rescanContainingItems();
 }
 
 bool GroupBox::moveTo(Vec2 to) { return ResizableBox::moveTo(to); }
@@ -1198,55 +1239,12 @@ bool Graph::deserialize(Json const& json)
 
   for (auto id : items_) {
     if (auto* group = get(id)->asGroupBox())
-      group->resetContainingItems();
+      group->remapItems(idmap);
   }
 
   doc->notifyGraphModified(this);
   return true;
 }
-
-/*
-bool Graph::deserialize(Json const& json)
-{
-  auto doc     = docRoot();
-  auto edgroup = doc->editGroup("load from json");
-  clear();
-
-  std::map<sint, ItemID> idmap; // from old id to new id
-  for (auto& itemdata : json["items"]) {
-    String       factory = itemdata["f"];
-    GraphItemPtr newitem;
-    if (factory.empty() || factory=="node") {
-      String type = itemdata["type"];
-      newitem     = nodeFactory()->createNode(this, type);
-    } else {
-      newitem = docRoot()->itemFactory()->make(this, factory);
-    }
-    if (!newitem || !newitem->deserialize(itemdata)) {
-      msghub::errorf("failed to import item {}", itemdata.dump(2));
-      return false;
-    }
-    idmap[itemdata["id"]] = add(newitem);
-  }
-
-  for (auto& linkdata : json["links"]) {
-    auto& from = linkdata["from"];
-    auto& to   = linkdata["to"];
-    if (!setLink(idmap.at(from["id"]), sint(from["port"]), idmap.at(to["id"]), sint(to["port"]))) {
-      msghub::errorf("failed to deserialize link {}", linkdata.dump(2));
-      return false;
-    }
-  }
-
-  for (auto id : items_) {
-    if (auto* group = get(id)->asGroupBox())
-      group->resetContainingItems();
-  }
-
-  doc->notifyGraphModified(this);
-  return true;
-}
-*/
 
 bool Graph::checkLoopBottomUp(ItemID target, Vector<ItemID>& loop, HashSet<ItemID>* visited)
 {

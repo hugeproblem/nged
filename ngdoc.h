@@ -668,13 +668,18 @@ class GroupBox
   Color           backgroundColor_;
   HashSet<ItemID> containingItems_;
 
+  void rescanContainingItems();
+
 public:
   GroupBox(Graph* parent);
 
   auto const& containingItems() const { return containingItems_; }
   void        setContainingItems(HashSet<ItemID> ids) { containingItems_ = std::move(ids); }
-  void        resetContainingItems();
+  void        remapItems(HashMap<size_t, ItemID> const& idmap); // idmap: old id -> new id, used mainly for pasting
+  void        insertItem(ItemID id);
+  void        eraseItem(ItemID id);
 
+  virtual bool  hitTest(Vec2 point) const;
   virtual void  setBounds(AABB absoluteBounds) override;
   virtual int   zOrder() const override { return -2; }
   virtual bool  moveTo(Vec2 to) override;

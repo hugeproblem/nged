@@ -1887,6 +1887,23 @@ void MoveState::onEnter(NetworkView* view)
     itemsToMove_ = {view->hoveringItem()};
   else
     itemsToMove_ = view->selectedItems();
+
+  auto graph = view->graph();
+  Vector<GroupBox*> groups;
+  for (auto id: itemsToMove_) {
+    if (auto* group = graph->get(id)->asGroupBox()) {
+      groups.push_back(group);
+    }
+  }
+  while (!groups.empty()) {
+    auto* group = groups.back();
+    groups.pop_back();
+    for (auto iid: group->containingItems()) {
+      itemsToMove_.insert(iid);
+      if (auto* anothergroup = graph->get(iid)->asGroupBox())
+        groups.push_back(anothergroup);
+    }
+  }
   done_            = false;
   moved_           = false;
   movedSinceEnter_ = false;
@@ -1896,38 +1913,26 @@ void MoveState::onExit(NetworkView* view)
 {
   if (movedSinceEnter_)
     view->doc()->history().commitIfAppropriate("moved items");
+
+  ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 }
 
 bool MoveState::update(NetworkView* view)
 {
   if (ImGui::IsMouseReleased(ImGuiMouseButton_Left))
     done_ = true;
-  // if a group box is not already selected, it will not move
-  // so that selecting items inside that group box is easier.
-  if (itemsToMove_.empty() ||
-      itemsToMove_.size() == 1 &&
-      view->selectedItems().empty() &&
-      view->graph()->get(*itemsToMove_.begin())->asGroupBox())
-    done_ = true;
-
+  
   if (!view->isFocused())
     return false;
+
+  ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
 
   auto const s2c = view->canvas()->screenToCanvas();
   if (!done_ && ImGui::IsMouseDown(ImGuiMouseButton_Left)) {
     auto posnow = s2c.transformPoint(vec(ImGui::GetMousePos()));
     auto delta  = posnow - anchor_;
     if (length2(delta) >= 1) {
-      auto itemsToMoveIncludingGroupContent = itemsToMove_;
-      for (auto id: itemsToMove_) {
-        auto graph = view->graph();
-        if (auto* group = graph->get(id).get()->asGroupBox()) {
-          for (auto iid: group->containingItems()) {
-            itemsToMoveIncludingGroupContent.insert(iid);
-          }
-        }
-      }
-      if (!view->graph()->move(itemsToMoveIncludingGroupContent, delta)) {
+      if (!view->graph()->move(itemsToMove_, delta)) {
         moved_ = false;
         done_  = true;
       } else {
@@ -1937,11 +1942,7 @@ bool MoveState::update(NetworkView* view)
       }
     }
   } else if (ImGui::IsMouseReleased(ImGuiMouseButton_Left)) {
-    for (auto id: view->graph()->items()) {
-      if (auto* group = view->graph()->get(id)->asGroupBox()) {
-        group->resetContainingItems();
-      }
-    }
+    view->editor()->confirmItemPlacements(view->graph().get(), itemsToMove_);
   }
 
   // if the movement has started, block other messages
@@ -2062,33 +2063,46 @@ bool ResizeBoxState::shouldEnter(NetworkView const* view) const
 {
   if (view->readonly())
     return false;
-  if (view->hoveringItem() != ID_None) {
-    if (auto item = view->graph()->get(view->hoveringItem())) {
-      if (auto* resizable = item->asResizable()) {
-        auto aabb = resizable->aabb();
-        auto mousepos = view->canvas()->screenToCanvas().transformPoint(vec(ImGui::GetMousePos()));
-        uint8_t nearLeft   = abs(mousepos.x-aabb.min.x) < 4.f ? 1 : 0;
-        uint8_t nearRight  = abs(mousepos.x-aabb.max.x) < 4.f ? 2 : 0;
-        uint8_t nearTop    = abs(mousepos.y-aabb.min.y) < 4.f ? 4 : 0;
-        uint8_t nearBottom = abs(mousepos.y-aabb.max.y) < 4.f ? 8 : 0;
-        ResizingLocation location;
-        switch (nearLeft|nearRight|nearTop|nearBottom) {
-          case 1:   location = Left; break;
-          case 2:   location = Right; break;
-          case 4:   location = Top; break;
-          case 8:   location = Bottom; break;
-          case 1|4: location = TopLeft; break;
-          case 1|8: location = BottomLeft; break;
-          case 2|4: location = TopRight; break;
-          case 2|8: location = BottomRight; break;
-          default:  location = Nowhere; break;
+  auto mousepos = view->canvas()->screenToCanvas().transformPoint(vec(ImGui::GetMousePos()));
+  auto hovering = view->hoveringItem();
+  auto graph = view->graph();
+  GraphItem* topgroup = nullptr;
+  if (hovering == ID_None) {
+    for (auto id: graph->items()) {
+      if (auto* group = graph->get(id)->asGroupBox()) {
+        if (group->aabb().contains(mousepos)) {
+          if (topgroup == nullptr || view->zCompare(topgroup, group) < 0) {
+            hovering = group->id();
+            topgroup = group;
+          }
         }
-        updateCursor(location);
+      }
+    }
+  }
+  if (auto item = graph->get(hovering)) {
+    if (auto* resizable = item->asResizable()) {
+      auto aabb = resizable->aabb();
+      uint8_t nearLeft   = abs(mousepos.x-aabb.min.x) < 4.f ? 1 : 0;
+      uint8_t nearRight  = abs(mousepos.x-aabb.max.x) < 4.f ? 2 : 0;
+      uint8_t nearTop    = abs(mousepos.y-aabb.min.y) < 4.f ? 4 : 0;
+      uint8_t nearBottom = abs(mousepos.y-aabb.max.y) < 4.f ? 8 : 0;
+      ResizingLocation location;
+      switch (nearLeft|nearRight|nearTop|nearBottom) {
+        case 1:   location = Left; break;
+        case 2:   location = Right; break;
+        case 4:   location = Top; break;
+        case 8:   location = Bottom; break;
+        case 1|4: location = TopLeft; break;
+        case 1|8: location = BottomLeft; break;
+        case 2|4: location = TopRight; break;
+        case 2|8: location = BottomRight; break;
+        default:  location = Nowhere; break;
+      }
+      updateCursor(location);
 
-        if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && location != Nowhere) {
-          const_cast<ResizeBoxState*>(this)->activate(item, location);
-          return true;
-        }
+      if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && location != Nowhere) {
+        const_cast<ResizeBoxState*>(this)->activate(item, location);
+        return true;
       }
     }
   }
@@ -2748,11 +2762,8 @@ bool CreateNodeState::update(NetworkView* view)
               id, 0, pendingOutputLink_.destItem, pendingOutputLink_.destPort);
         }
         // reset group boxes
-        for (auto id: view->graph()->items()) {
-          if (auto* group = view->graph()->get(id)->asGroupBox()) {
-            group->resetContainingItems();
-          }
-        }
+        if (id != ID_None)
+          view->editor()->confirmItemPlacements(view->graph().get(), {id}); // to trigger group box update
         isPlaced_ = true;
         msghub::debugf("item {} placed into graph", id.value());
         view->setSelectedItems({id});

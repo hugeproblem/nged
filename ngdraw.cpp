@@ -187,7 +187,10 @@ void GroupBox::draw(Canvas* canvas, GraphItemState state) const
   }
   auto box = aabb();
 
+  auto headerBR = box.max;
+  headerBR.y = box.min.y + UIStyle::instance().groupboxHeaderHeight;
   canvas->pushLayer(Canvas::Layer::Lower);
+  canvas->drawRect(box.min, headerBR, 0, bgstyle); // the header
   canvas->drawRect(box.min, box.max, 0, bgstyle);
   canvas->popLayer();
 }

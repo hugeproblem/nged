@@ -239,7 +239,7 @@ public:
   // easingOrder == 4 -> expo
   void zoomToSelected(float time, int easingOrder = 3, Vec2 offset = {0, 0});
   // compare z-order, return -1 if lhs<rhs, 0 if lhs==rhs, 1 if lhs>rhs.
-  int zCompare(GraphItem* lhs, GraphItem* rhs);
+  int zCompare(GraphItem* lhs, GraphItem* rhs) const;
 
   void addState(InteractionStatePtr state)
   {
@@ -630,6 +630,8 @@ public:
   // graph manipulation respecting responser {{{
   NodePtr createNode(Graph* graph, StringView type);
   ItemID  addItem(Graph* graph, GraphItemPtr item);
+  void    confirmItemPlacements(Graph* graph, HashSet<ItemID> const& items);
+  bool    moveItems(Graph* graph, HashSet<ItemID> const& items, Vec2 delta);
   void    removeItems(Graph* graph, HashSet<ItemID> const& items, HashSet<ItemID>* remainingItems=nullptr);
   bool    setLink(Graph* graph, NetworkView* fromView, ItemID sourceItem, sint sourcePort, ItemID destItem, sint destPort);
   void    removeLink(Graph* graph, ItemID destItem, sint destPort);
