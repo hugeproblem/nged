@@ -473,6 +473,13 @@ void GroupBox::rescanContainingItems()
   }
 }
 
+bool GroupBox::hitTest(AABB box) const
+{
+  auto bb = aabb();
+  bb.max.y = bb.min.y + UIStyle::instance().groupboxHeaderHeight;
+  return bb.intersects(box);
+}
+
 bool GroupBox::hitTest(Vec2 point) const
 {
   auto bb = aabb();

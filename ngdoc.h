@@ -679,7 +679,8 @@ public:
   void        insertItem(ItemID id);
   void        eraseItem(ItemID id);
 
-  virtual bool  hitTest(Vec2 point) const;
+  virtual bool  hitTest(AABB box) const override;
+  virtual bool  hitTest(Vec2 point) const override;
   virtual void  setBounds(AABB absoluteBounds) override;
   virtual int   zOrder() const override { return -2; }
   virtual bool  moveTo(Vec2 to) override;
