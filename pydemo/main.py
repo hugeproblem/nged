@@ -1,9 +1,10 @@
 from nged import Command, Shortcut, NetworkView, App, Editor, builtinGraphItemFactory, startApp
-from nged.msghub import trace, debug, error
+from nged.msghub import trace, debug, info, error
 from dataview import DataView
 from node import nodeFactory
 from document import MyDocument
 from edresponse import setupCallbacks
+from evaluation import GraphEvaluationContext
 import nodelib
 try:
     import libpandas
@@ -74,6 +75,11 @@ def evalGraph(view):
     # result = ctx.getResult(doc.root.outputnode)
     # debug(f'root.output = {result}')
 
+def resetEvalContext(view):
+    doc = view.doc or view.graph.doc
+    doc.evalContext = GraphEvaluationContext()
+    info('graph evaluation context is reset')
+
 
 showDataCmd = makeSimpleCommand(lambda view: view.editor.addView(
     view.doc, 'data'), 'View/Data', 'Show Datasheet', 'network', 'Ctrl+Alt+D', mayModifyGraph=False)
@@ -83,6 +89,8 @@ evalGraphCmd = makeSimpleCommand(
     evalGraph, 'Eval/Graph', 'Evaluate Graph', 'network|inspector', 'F5')
 prepareGraphCmd = makeSimpleCommand(
     prepareGraph, 'Eval/PrepareGraph', 'Prepare Graph', 'network|inspector', 'F6')
+resetEvalContextCmd = makeSimpleCommand(
+    resetEvalContext, 'Eval/ResetContext', 'Reset Evaluation Context', 'network|inspector', 'Alt+F5')
 
 
 class MyApp(App):
@@ -105,6 +113,7 @@ class MyApp(App):
         self.editor.addCommand(evalSelectedNodeCmd)
         self.editor.addCommand(evalGraphCmd)
         self.editor.addCommand(prepareGraphCmd)
+        self.editor.addCommand(resetEvalContextCmd)
         self.editor.newDoc()
         setupCallbacks(self.editor)
         self.timestamp = time.process_time()
