@@ -214,6 +214,9 @@ public:
       editable_ = false;
     float width = 50.f;
     float height = aabb_.height();
+    IconType   iconType;
+    StringView iconData;
+    getIcon(iconType, iconData);
     if (numDesiredInputs_ < 0)
       width = 25.f;
     if (type()=="output") {
@@ -228,6 +231,8 @@ public:
       width = 30.f;
       height = width;
       editable_ = false;
+    } else if (iconType == IconType::Text) {
+      width = std::max(20.f, iconData.size() * UIStyle::instance().normalFontSize / 2.f + 8.f);
     } else if (type().find("call::")==0 || type().find("::") == String::npos) {
       width = std::max(20.f, name().size() * UIStyle::instance().normalFontSize / 2.f + 8.f);
     } else if (type().find("quote::") == String::npos) {
