@@ -10,6 +10,7 @@
 #include <deque>
 #include <filesystem>
 #include <fstream>
+#include <random>
 
 namespace nged {
 
@@ -65,8 +66,9 @@ void to_json(nlohmann::json& j, AABB const& aabb)
 // GraphItem {{{
 UID generateUID()
 {
-  static UIDGenerator generator;
-  return generator.getUUID();
+  static auto mt = std::mt19937();
+  static uuids::uuid_random_generator generator{mt};
+  return generator();
 }
 
 GraphItem::GraphItem(Graph* parent) : parent_(parent), uid_(generateUID()), sourceUID_{} {}
@@ -76,7 +78,7 @@ bool GraphItem::serialize(Json& json) const
   to_json(json["aabb"], aabb_);
   std::array<int64_t, 2> intpos = {int64_t(std::round(pos_.x)), int64_t(std::round(pos_.y))};
   json["pos"]                   = intpos;
-  json["uid"]                   = uid_.str();
+  json["uid"]                   = uidToString(uid_);
   return true;
 }
 
@@ -98,7 +100,7 @@ bool GraphItem::deserialize(Json const& json)
     return false;
 
   if (auto uidstr = json.value("uid", ""); !uidstr.empty())
-    sourceUID_ = UID::fromStrFactory(uidstr);
+    sourceUID_ = uidFromString(uidstr);
   if (parent_ && parent_->docRoot() && parent_->docRoot()->deserializeInplace()) {
     parent_->docRoot()->moveUID(uid_, sourceUID_);
     uid_ = sourceUID_;
@@ -1184,7 +1186,7 @@ bool Graph::deserialize(Json const& json)
   HashMap<UID, ItemID>    uidoldmap; // uid to old id
   for (auto&& itemdata : json["items"])
     if (itemdata.contains("uid"))
-      uidoldmap[UID::fromStrFactory(itemdata["uid"])] = ItemID(itemdata["id"].get<size_t>());
+      uidoldmap[uidFromString(String(itemdata["uid"]))] = ItemID(itemdata["id"].get<size_t>());
   HashSet<ItemID> redundantItems;
   for (auto id : items()) {
     auto item = get(id);
@@ -1197,7 +1199,7 @@ bool Graph::deserialize(Json const& json)
   }
   remove(redundantItems);
   for (auto&& itemdata : json["items"]) {
-    auto uid = itemdata.contains("uid") ? UID::fromStrFactory(itemdata["uid"]) : UID();
+    auto uid = itemdata.contains("uid") ? uidFromString(String(itemdata["uid"])) : UID();
     if (auto itr = uidmap.find(uid); itr != uidmap.end()) {
       if (!get(itr->second)->deserialize(itemdata)) {
         msghub::errorf("failed to import item {}", itemdata.dump(2));

@@ -941,8 +941,8 @@ PYBIND11_MODULE(nged, m) {
     .def_property_readonly("pos", &nged::GraphItem::pos)
     .def_property_readonly("aabb", &nged::GraphItem::aabb)
     .def_property_readonly("graph", &nged::GraphItem::parent)
-    .def_property_readonly("uid", [](nged::GraphItem* item){return item->uid().str();})
-    .def_property_readonly("sourceUID", [](nged::GraphItem* item){return item->sourceUID().str();})
+    .def_property_readonly("uid", [](nged::GraphItem* item){return nged::uidToString(item->uid());})
+    .def_property_readonly("sourceUID", [](nged::GraphItem* item){return nged::uidToString(item->sourceUID());})
     .def("draw", &nged::GraphItem::draw, py::arg("canvas"), py::arg("state") = nged::GraphItemState::DEFAULT)
     .def("hitTest", py::overload_cast<nged::Vec2>(&nged::GraphItem::hitTest, py::const_), py::arg("pos"))
     .def("hitTest", py::overload_cast<nged::AABB>(&nged::GraphItem::hitTest, py::const_), py::arg("box"))
@@ -1294,7 +1294,7 @@ PYBIND11_MODULE(nged, m) {
     .def("getItemByUID", [](nged::Graph* graph, std::string const& uidstr)->nged::GraphItemPtr{
       if (uidstr.empty())
         return nullptr;
-      auto uid = nged::UID::fromStrFactory(uidstr);
+      auto uid = nged::uidFromString(uidstr);
       return graph->docRoot()->findItemByUID(uid);
     })
     .def("remove", [](nged::Graph* graph, py::list ids){
@@ -1348,7 +1348,7 @@ PYBIND11_MODULE(nged, m) {
     .def("redo", &nged::NodeGraphDoc::redo)
     .def("getItem", &nged::NodeGraphDoc::getItem, py::arg("id"))
     .def("getItemByUID", [](nged::NodeGraphDoc* doc, std::string const& uidstr){
-      auto uid = nged::UID::fromStrFactory(uidstr);
+      auto uid = nged::uidFromString(uidstr);
       return doc->findItemByUID(uid);
     })
     .def("beginEditGroup", [](nged::NodeGraphDoc* self) {

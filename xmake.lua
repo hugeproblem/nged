@@ -153,7 +153,8 @@ target('ngdoc')
   add_includedirs(
     'deps/nlohmann',
     'deps/spdlog/include',
-    'deps/uuid_v4',
+    'deps/stduuid/include',
+    'deps/stduuid', -- for gsl
     'deps/parallel_hashmap/parallel_hashmap',
     {public=true})
 

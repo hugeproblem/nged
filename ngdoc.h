@@ -4,7 +4,7 @@
 #include "utils.h"
 #include <nlohmann/json_fwd.hpp>
 #include <spdlog/fmt/fmt.h> // TODO: maybe use std::format
-#include <uuid_v4.h>
+#include <uuid.h>
 #include <phmap.h>
 
 #include <algorithm>
@@ -160,8 +160,21 @@ using WeakGraphPtr        = std::weak_ptr<Graph>;
 using NodeGraphDocPtr     = std::shared_ptr<NodeGraphDoc>;
 using NodeFactoryPtr      = std::shared_ptr<NodeFactory>;
 using GraphItemFactoryPtr = std::shared_ptr<GraphItemFactory>;
-using UID                 = UUIDv4::UUID;
-using UIDGenerator        = UUIDv4::UUIDGenerator<std::mt19937_64>;
+using UID                 = uuids::uuid;
+
+// UID Related {{{
+UID generateUID();
+
+inline UID uidFromString(StringView str)
+{
+  return uuids::uuid::from_string(str).value();
+}
+
+inline String uidToString(UID uid)
+{
+  return uuids::to_string(uid);
+}
+// }}}
 
 // MessageHub {{{
 class MessageHub
@@ -270,8 +283,6 @@ public: // helpers
 // }}} MessageHub
 
 // Graph Item & Registry {{{
-UID generateUID();
-
 enum class GraphItemState
 {
   DEFAULT = 0,
