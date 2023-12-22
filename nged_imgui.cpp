@@ -2327,12 +2327,8 @@ bool LinkState::update(NetworkView* view)
       if (item && item->asNode()) {
         auto* node = item->asNode();
         if (srcPin_ != PIN_None) {
-          if (node->numMaxInputs() > 0)
-            view->editor()->setLink(view->graph().get(), view, srcPin_.node, srcPin_.pin, dropItemID, 0);
-          else if (node->numMaxInputs() < 0) {
-            // add to the last
-            view->editor()->setLink(view->graph().get(), view, srcPin_.node, srcPin_.pin, dropItemID, -1);
-          }
+          auto pin = node->getPinForIncomingLink(srcPin_.node, srcPin_.pin);
+          view->editor()->setLink(view->graph().get(), view, srcPin_.node, srcPin_.pin, dropItemID, pin);
         }
         if (dstPin_ != PIN_None) {
           if (node->numOutputs() > 0)

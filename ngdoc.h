@@ -511,6 +511,8 @@ public:
   {
     return true;
   }
+  virtual sint getPinForIncomingLink(ItemID sourceItem, sint sourcePin) const { return numMaxInputs() > 0? 0 : -1; }
+
   /// try to rename this node to `desired`
   /// if `desired` is not acceptable but the renaming can be done nevertheless, `accepted` should
   /// be set to the new accepted name if renaming was done, return true otherwise return false, and
@@ -554,6 +556,51 @@ public:
   bool          getInput(sint inPort, NodePtr& nodeptr, sint& outPort) const;
 };
 
+class TypeSystem
+{
+  Vector<String>        types_;
+  HashMap<String, sint> typeIndex_;
+  HashMap<String, sint> typeBaseType_;
+  HashMap<std::pair<sint, sint>, bool> typeConvertable_;
+
+  TypeSystem() = default;
+  TypeSystem(TypeSystem const&) = delete;
+
+public:
+  ~TypeSystem() = default;
+  TypeSystem& instance();
+  sint        registerType(StringView type, StringView baseType="");
+  void        setConvertable(StringView from, StringView to, bool convertable);
+  bool        isConvertable(StringView from, StringView to) const;
+  bool        isType(StringView type) const;
+  sint        typeIndex(StringView type) const;
+  sint        typeCount() const;
+  StringView  typeName(sint index) const;
+  StringView  typeBaseType(sint index) const;        
+};
+
+/// Node with type checking, accept input only if `typeConvertable(sourceNode->outputType(sourcePort), inputType(port))` returns true
+class TypedNode : public Node
+{
+protected:
+  Vector<String> inputTypes_;
+  Vector<String> outputTypes_;
+
+public:
+  TypedNode(Graph* parent, String type, String name, Vector<String> inputTypes, Vector<String> outputTypes):
+    Node(parent, type, name)
+  {
+    inputTypes_ = std::move(inputTypes);
+    outputTypes_ = std::move(outputTypes);
+  }
+
+  StringView inputType(sint i) const;
+  StringView outputType(sint i) const;
+
+  bool acceptInput(sint port, Node const* sourceNode, sint sourcePort) const override;
+};
+
+/// The factory that makes root graph and nodes
 class NodeFactory
 {
 public:
