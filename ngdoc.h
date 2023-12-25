@@ -559,6 +559,7 @@ public:
 class TypeSystem
 {
   Vector<String>        types_;
+  sint                  nextTypeIndex_ = 0;
   HashMap<String, sint> typeIndex_;
   HashMap<String, sint> typeBaseType_;
   HashMap<std::pair<sint, sint>, bool> typeConvertable_;
@@ -568,15 +569,17 @@ class TypeSystem
 
 public:
   ~TypeSystem() = default;
-  TypeSystem& instance();
-  sint        registerType(StringView type, StringView baseType="");
+  using TypeIndex = sint;
+  static TypeSystem& instance();
+
+  TypeIndex   registerType(StringView type, StringView baseType="");
   void        setConvertable(StringView from, StringView to, bool convertable);
   bool        isConvertable(StringView from, StringView to) const;
   bool        isType(StringView type) const;
-  sint        typeIndex(StringView type) const;
+  TypeIndex   typeIndex(StringView type) const;
   sint        typeCount() const;
-  StringView  typeName(sint index) const;
-  StringView  typeBaseType(sint index) const;        
+  StringView  typeName(TypeIndex index) const;
+  StringView  typeBaseType(TypeIndex index) const;        
 };
 
 /// Node with type checking, accept input only if `typeConvertable(sourceNode->outputType(sourcePort), inputType(port))` returns true
@@ -598,6 +601,7 @@ public:
   StringView outputType(sint i) const;
 
   bool acceptInput(sint port, Node const* sourceNode, sint sourcePort) const override;
+  sint getPinForIncomingLink(ItemID sourceItem, sint sourcePin) const override;
 };
 
 /// The factory that makes root graph and nodes
@@ -698,6 +702,8 @@ public:
 
   virtual bool serialize(Json& json) const override;
   virtual bool deserialize(Json const& json) override;
+
+  bool getNodeSource(Node*& node, sint& pin) const;
 };
 // }}} Router
 

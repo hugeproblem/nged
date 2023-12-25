@@ -282,6 +282,153 @@ bool Node::deserialize(Json const& json)
 }
 // }}} Node
 
+// Type System {{{
+TypeSystem& TypeSystem::instance()
+{
+  static TypeSystem instance;
+  return instance;
+}
+
+TypeSystem::TypeIndex TypeSystem::registerType(StringView name, StringView baseType)
+{
+  auto existingItr = typeIndex_.find(name);
+  if (existingItr != typeIndex_.end())
+    return existingItr->second;
+  sint baseindex = baseType==""? -1: registerType(baseType);
+  auto index = nextTypeIndex_++;
+  auto strname = String(name);
+  typeIndex_[strname] = index;
+  types_.emplace_back(strname);
+  assert(index+1 == types_.size());
+  if (baseindex != -1) {
+    typeBaseType_[strname] = baseindex;
+    typeConvertable_[std::make_pair(index, baseindex)] = true;
+  }
+  return index;
+}
+
+void TypeSystem::setConvertable(StringView from, StringView to, bool convertable)
+{
+  auto fromindex = registerType(from);
+  auto toindex = registerType(to);
+  typeConvertable_[std::make_pair(fromindex, toindex)] = convertable;
+}
+
+bool TypeSystem::isConvertable(StringView from, StringView to) const
+{
+  if (from == to)
+    return true;
+  auto fromindex = typeIndex(from);
+  auto toindex = typeIndex(to);
+  auto itr = typeConvertable_.find(std::make_pair(fromindex, toindex));
+  // TODO: if a -> b and b -> c, find a way to convert a -> c
+  if (itr != typeConvertable_.end())
+    return itr->second;
+  else
+    return false;
+}
+
+bool TypeSystem::isType(StringView type) const
+{
+  return typeIndex_.find(type) != typeIndex_.end();
+}
+
+TypeSystem::TypeIndex TypeSystem::typeIndex(StringView type) const
+{
+  auto itr = typeIndex_.find(type);
+  if (itr != typeIndex_.end())
+    return itr->second;
+  else
+    return -1;
+}
+
+sint TypeSystem::typeCount() const
+{
+  return types_.size();
+}
+
+StringView TypeSystem::typeName(TypeIndex index) const
+{
+  if (index < 0 || index >= types_.size())
+    return "";
+  else
+    return types_[index];
+}
+
+StringView TypeSystem::typeBaseType(TypeIndex index) const
+{
+  auto itr = typeBaseType_.find(typeName(index));
+  if (itr != typeBaseType_.end())
+    return typeName(itr->second);
+  else
+    return "";
+}
+// }}} Type System
+
+// Typed Node {{{
+StringView TypedNode::inputType(sint i) const
+{
+  if (i < 0 || i >= numMaxInputs())
+    return "";
+  else
+    return inputTypes_[i];
+}
+
+StringView TypedNode::outputType(sint i) const
+{
+  if (i < 0 || i >= numOutputs())
+    return "";
+  else
+    return outputTypes_[i];
+}
+
+bool TypedNode::acceptInput(sint port, Node const* sourceNode, sint sourcePort) const
+{
+  auto const* typedSource = dynamic_cast<TypedNode const*>(sourceNode);
+  assert(typedSource);
+  auto const& typeSystem = TypeSystem::instance();
+  auto const  srcType    = typedSource->outputType(sourcePort);
+  auto const  dstType    = inputType(port);
+  if (typeSystem.isConvertable(srcType, dstType))
+    return true;
+  else {
+    msghub::errorf(
+      "cannot connect {}[{}]({}) to {}[{}]({})",
+      sourceNode->name(),
+      sourcePort,
+      srcType,
+      name(),
+      port,
+      dstType);
+    return false;
+  }
+}
+
+sint TypedNode::getPinForIncomingLink(ItemID sourceItem, sint sourcePin) const
+{
+  if (numMaxInputs() <= 0)
+    return -1;
+  Node* sourceNode = nullptr;
+  if (auto* node = parent()->get(sourceItem)->asNode()) {
+    sourceNode = node;
+  } else if (auto* router = parent()->get(sourceItem)->asRouter()) {
+    if (!router->getNodeSource(sourceNode, sourcePin))
+      return -1;
+  }
+  if (!sourceNode)
+    return -1;
+  auto const* typedSource = dynamic_cast<TypedNode const*>(sourceNode);
+  assert(typedSource);
+  auto const& typeSystem = TypeSystem::instance();
+  auto const  srcType    = typedSource->outputType(sourcePin);
+  for (sint i = 0, n = numMaxInputs(); i < n; ++i) {
+    auto const dstType = inputType(i);
+    if (typeSystem.isConvertable(srcType, dstType))
+      return i;
+  }
+}
+// }}} Typed Node
+
 // Link {{{
 void Link::calculatePath()
 {
@@ -400,6 +547,25 @@ bool Router::deserialize(Json const& json)
   if (auto coloritr = json.find("color"); coloritr != json.end())
     from_json(*coloritr, color_);
   return true;
+}
+
+bool Router::getNodeSource(Node*& node, sint& pin) const
+{
+  if (auto g = parent()) {
+    InputConnection ic;
+    if (!g->getLinkSource(id(), 0, ic))
+      return false;
+    while (auto* router = g->get(ic.sourceItem)->asRouter()) {
+      if (!g->getLinkSource(ic.sourceItem, 0, ic))
+        return false;
+    }
+    if (auto* asnode = g->get(ic.sourceItem)->asNode()) {
+      node = asnode;
+      pin  = ic.sourcePort;
+      return true;
+    }
+  }
+  return false;
 }
 // }}} Router
 
