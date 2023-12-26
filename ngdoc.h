@@ -17,6 +17,7 @@
 #include <limits>
 #include <map>
 #include <memory>
+#include <optional>
 #include <random>
 #include <set>
 #include <shared_mutex>
@@ -41,6 +42,8 @@ template<class T>
 using Vector     = std::vector<T>;
 using String     = std::string;
 using StringView = std::string_view;
+template<class T>
+using Optional   = std::optional<T>;
 
 // ItemID & Connection {{{
 class ItemID
@@ -465,6 +468,8 @@ enum class IconType
   // BitMap,
 };
 
+class TypedNode;
+
 /// Node Data Model
 class Node
     : public GraphItem
@@ -484,6 +489,8 @@ public:
   virtual Vec2 inputPinDir(sint i) const { return Vec2{0, -1}; } // hints the link direction
   virtual Vec2 outputPinPos(sint i) const;
   virtual Vec2 outputPinDir(sint i) const { return Vec2{0, 1}; } // hints the link direction
+  virtual Color inputPinColor(sint i) const;
+  virtual Color outputPinColor(sint i) const;
   // if there are too many input pins or unlimited number of input pins, they will be merged
   // returns true if the node has merged input pin, the `bound` argument will be hold the bounding
   // box else  return false, the `bound` will be untouched
@@ -542,12 +549,14 @@ public:
   virtual Color color() const override { return color_; }
   virtual void  setColor(Color c) override { color_ = c; }
 
-  virtual Node const*    asNode() const override { return this; }
-  virtual Node*          asNode() override { return this; }
-  virtual Dyeable const* asDyeable() const override { return this; }
-  virtual Dyeable*       asDyeable() override { return this; }
-  virtual Graph const*   asGraph() const { return nullptr; }
-  virtual Graph*         asGraph() { return nullptr; }
+  virtual Node const*      asNode() const override { return this; }
+  virtual Node*            asNode() override { return this; }
+  virtual Dyeable const*   asDyeable() const override { return this; }
+  virtual Dyeable*         asDyeable() override { return this; }
+  virtual Graph const*     asGraph() const { return nullptr; }
+  virtual Graph*           asGraph() { return nullptr; }
+  virtual TypedNode const* asTypedNode() const { return nullptr; }
+  virtual TypedNode*       asTypedNode() { return nullptr; }
 
   // Interface:
   String const& type() const { return type_; }
@@ -563,6 +572,7 @@ class TypeSystem
   HashMap<String, sint> typeIndex_;
   HashMap<String, sint> typeBaseType_;
   HashMap<std::pair<sint, sint>, bool> typeConvertable_;
+  HashMap<sint, Color>  typeColorHints_;
 
   TypeSystem() = default;
   TypeSystem(TypeSystem const&) = delete;
@@ -570,16 +580,21 @@ class TypeSystem
 public:
   ~TypeSystem() = default;
   using TypeIndex = sint;
+  static constexpr TypeIndex InvalidTypeIndex = -1;
   static TypeSystem& instance();
 
-  TypeIndex   registerType(StringView type, StringView baseType="");
-  void        setConvertable(StringView from, StringView to, bool convertable);
-  bool        isConvertable(StringView from, StringView to) const;
-  bool        isType(StringView type) const;
-  TypeIndex   typeIndex(StringView type) const;
-  sint        typeCount() const;
-  StringView  typeName(TypeIndex index) const;
-  StringView  typeBaseType(TypeIndex index) const;        
+  TypeIndex       registerType(StringView type, StringView baseType="", Color hintColor=Color{0,0,0,0});
+  void            setConvertable(StringView from, StringView to, bool convertable = true);
+  bool            isConvertable(StringView from, StringView to) const;
+  bool            isType(StringView type) const;
+  TypeIndex       typeIndex(StringView type) const;
+  sint            typeCount() const;
+  StringView      typeName(TypeIndex index) const;
+  StringView      typeBaseType(TypeIndex index) const;
+  void            setColorHint(TypeIndex index, Color hint);
+  Optional<Color> colorHint(TypeIndex index) const;
+  void            setColorHint(StringView type, Color hint) { setColorHint(typeIndex(type), hint); }
+  Optional<Color> colorHint(StringView type) const { return colorHint(typeIndex(type)); }
 };
 
 /// Node with type checking, accept input only if `typeConvertable(sourceNode->outputType(sourcePort), inputType(port))` returns true
@@ -600,8 +615,14 @@ public:
   StringView inputType(sint i) const;
   StringView outputType(sint i) const;
 
-  bool acceptInput(sint port, Node const* sourceNode, sint sourcePort) const override;
-  sint getPinForIncomingLink(ItemID sourceItem, sint sourcePin) const override;
+  virtual TypedNode const* asTypedNode() const override { return this; }
+  virtual TypedNode*       asTypedNode() override { return this; }
+
+  virtual Color inputPinColor(sint i) const override;
+  virtual Color outputPinColor(sint i) const override;
+
+  virtual bool acceptInput(sint port, Node const* sourceNode, sint sourcePort) const override;
+  virtual sint getPinForIncomingLink(ItemID sourceItem, sint sourcePin) const override;
 };
 
 /// The factory that makes root graph and nodes

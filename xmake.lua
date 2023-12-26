@@ -212,6 +212,12 @@ target('demo')
   add_files('demo/main.cpp')
   add_includedirs('.', 'deps/boxer/include')
 
+target('typed_demo')
+  set_kind('binary')
+  add_deps('nged', 'entry')
+  add_files('typed_demo/main.cpp')
+  add_includedirs('.', 'deps/boxer/include')
+
 target('ngs7')
   set_kind('binary')
   add_deps('nged', 's7', 'entry')

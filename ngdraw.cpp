@@ -68,10 +68,12 @@ void Node::draw(Canvas* canvas, GraphItemState state) const
         if (InputConnection input; parent() && parent()->getLinkSource(id(), i, input)) {
           if (auto srcitem = parent()->get(input.sourceItem)) {
             if (auto* node = srcitem->asNode())
-              pinstyle.fillColor = gmath::toUint32RGBA(node->color());
+              pinstyle.fillColor = gmath::toUint32RGBA(node->outputPinColor(input.sourcePort));
             else if (auto* router = srcitem->asRouter())
               pinstyle.fillColor = gmath::toUint32RGBA(router->color());
           }
+        } else {
+          pinstyle.fillColor = gmath::toUint32RGBA(inputPinColor(i));
         }
         canvas->drawCircle(inputPinPos(i), UIStyle::instance().nodePinRadius, 0, pinstyle);
       }
@@ -79,8 +81,14 @@ void Node::draw(Canvas* canvas, GraphItemState state) const
       if (AABB bb; mergedInputBound(bb))
         canvas->drawRect(bb.min, bb.max, UIStyle::instance().nodePinRadius, style);
     }
-    for (sint i = 0; i < numOutputs(); ++i)
-      canvas->drawCircle(outputPinPos(i), UIStyle::instance().nodePinRadius, 0, style);
+    
+    {
+      auto pinstyle = style;
+      for (sint i = 0; i < numOutputs(); ++i) {
+        pinstyle.fillColor = gmath::toUint32RGBA(outputPinColor(i));
+        canvas->drawCircle(outputPinPos(i), UIStyle::instance().nodePinRadius, 0, pinstyle);
+      }
+    }
 
     // label
     auto label = this->label();
@@ -122,7 +130,9 @@ void Link::draw(Canvas* canvas, GraphItemState state) const
     UIStyle::instance().linkStrokeWidth, // strokeWidth
     UIStyle::instance().linkDefaultColor};
   if (auto srcitem = parent()->get(input_.sourceItem)) {
-    if (auto* dye = srcitem->asDyeable()) {
+    if (auto* node = srcitem->asNode()) {
+      style.strokeColor = gmath::toUint32RGBA(node->outputPinColor(input_.sourcePort));
+    } else if (auto* dye = srcitem->asDyeable()) {
       style.strokeColor = gmath::toUint32RGBA(dye->color());
     }
   }

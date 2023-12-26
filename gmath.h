@@ -303,6 +303,24 @@ inline Mat3 Mat3::operator*(Mat3 const& that) const
 
 // color
 
+template <class T>
+inline bool cequal(T const& a, T const& b)
+{
+  return memcmp(&a, &b, sizeof(T)) == 0;
+}
+
+#define MAKE_COLOR_CMP_OPERATOR(type) \
+  inline bool operator==(type const& a, type const& b) { return cequal(a, b); } \
+  inline bool operator!=(type const& a, type const& b) { return !cequal(a, b); }
+
+MAKE_COLOR_CMP_OPERATOR(LinearColor)
+MAKE_COLOR_CMP_OPERATOR(HSLColor)
+MAKE_COLOR_CMP_OPERATOR(HSVColor)
+MAKE_COLOR_CMP_OPERATOR(sRGBColor)
+MAKE_COLOR_CMP_OPERATOR(FloatSRGBColor)
+
+#undef MAKE_COLOR_CMP_OPERATOR
+
 inline sRGBColor fromUint32sRGB(uint32_t uc)
 {
   return {uint8_t((uc & 0xff0000) >> 16), uint8_t((uc & 0xff00) >> 8), uint8_t(uc & 0xff), 255};

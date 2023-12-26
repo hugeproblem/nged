@@ -164,6 +164,20 @@ Vec2 Node::outputPinPos(sint i) const
          pos_;
 }
 
+Color Node::inputPinColor(sint i) const
+{
+  auto parent = this->parent();
+  if (InputConnection ic; parent && parent->getLinkSource(id(), i, ic))
+    if (auto item = parent->get(ic.sourceItem); item && item->asDyeable())
+      return item->asDyeable()->color();
+  return color_;
+}
+
+Color Node::outputPinColor(sint i) const
+{
+  return color_;
+}
+
 bool Node::mergedInputBound(AABB& bound) const
 {
   auto const n = numMaxInputs();
@@ -289,7 +303,7 @@ TypeSystem& TypeSystem::instance()
   return instance;
 }
 
-TypeSystem::TypeIndex TypeSystem::registerType(StringView name, StringView baseType)
+TypeSystem::TypeIndex TypeSystem::registerType(StringView name, StringView baseType, Color hintColor)
 {
   auto existingItr = typeIndex_.find(name);
   if (existingItr != typeIndex_.end())
@@ -304,6 +318,9 @@ TypeSystem::TypeIndex TypeSystem::registerType(StringView name, StringView baseT
     typeBaseType_[strname] = baseindex;
     typeConvertable_[std::make_pair(index, baseindex)] = true;
   }
+  static auto constexpr noColor = Color{0,0,0,0};
+  if (hintColor != noColor)
+    setColorHint(index, hintColor);
   return index;
 }
 
@@ -317,6 +334,8 @@ void TypeSystem::setConvertable(StringView from, StringView to, bool convertable
 bool TypeSystem::isConvertable(StringView from, StringView to) const
 {
   if (from == to)
+    return true;
+  if (to == "any" || to == "*")
     return true;
   auto fromindex = typeIndex(from);
   auto toindex = typeIndex(to);
@@ -339,7 +358,7 @@ TypeSystem::TypeIndex TypeSystem::typeIndex(StringView type) const
   if (itr != typeIndex_.end())
     return itr->second;
   else
-    return -1;
+    return InvalidTypeIndex;
 }
 
 sint TypeSystem::typeCount() const
@@ -363,6 +382,21 @@ StringView TypeSystem::typeBaseType(TypeIndex index) const
   else
     return "";
 }
+
+Optional<Color> TypeSystem::colorHint(TypeIndex index) const
+{
+  if (auto itr = typeColorHints_.find(index); itr != typeColorHints_.end() && index != InvalidTypeIndex)
+    return Optional<Color>(itr->second);
+  else
+    return Optional<Color>{};
+}
+
+void TypeSystem::setColorHint(TypeIndex index, Color color)
+{
+  if (index == InvalidTypeIndex)
+    return;
+  typeColorHints_[index] = color;
+}
 // }}} Type System
 
 // Typed Node {{{
@@ -382,26 +416,35 @@ StringView TypedNode::outputType(sint i) const
     return outputTypes_[i];
 }
 
+Color TypedNode::inputPinColor(sint i) const
+{
+  if (i < 0 || i >= numMaxInputs())
+    return Node::color();
+  else
+    return TypeSystem::instance().colorHint(inputType(i)).value_or(
+      Node::inputPinColor(i));
+}
+
+Color TypedNode::outputPinColor(sint i) const
+{
+  if (i < 0 || i >= numOutputs())
+    return Node::color();
+  else
+    return TypeSystem::instance().colorHint(outputType(i)).value_or(
+      Node::outputPinColor(i));
+}
+
 bool TypedNode::acceptInput(sint port, Node const* sourceNode, sint sourcePort) const
 {
-  auto const* typedSource = dynamic_cast<TypedNode const*>(sourceNode);
+  auto const* typedSource = sourceNode->asTypedNode();
   assert(typedSource);
   auto const& typeSystem = TypeSystem::instance();
   auto const  srcType    = typedSource->outputType(sourcePort);
   auto const  dstType    = inputType(port);
   if (typeSystem.isConvertable(srcType, dstType))
     return true;
-  else {
-    msghub::errorf(
-      "cannot connect {}[{}]({}) to {}[{}]({})",
-      sourceNode->name(),
-      sourcePort,
-      srcType,
-      name(),
-      port,
-      dstType);
+  else 
     return false;
-  }
 }
 
 sint TypedNode::getPinForIncomingLink(ItemID sourceItem, sint sourcePin) const
@@ -417,7 +460,7 @@ sint TypedNode::getPinForIncomingLink(ItemID sourceItem, sint sourcePin) const
   }
   if (!sourceNode)
     return -1;
-  auto const* typedSource = dynamic_cast<TypedNode const*>(sourceNode);
+  auto const* typedSource = sourceNode->asTypedNode();
   assert(typedSource);
   auto const& typeSystem = TypeSystem::instance();
   auto const  srcType    = typedSource->outputType(sourcePin);
@@ -426,6 +469,7 @@ sint TypedNode::getPinForIncomingLink(ItemID sourceItem, sint sourcePin) const
     if (typeSystem.isConvertable(srcType, dstType))
       return i;
   }
+  return -1;
 }
 // }}} Typed Node
 
