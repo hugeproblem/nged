@@ -1,0 +1,39 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${default}",
+                ".",
+                "deps/boxer/include",
+                "deps/doctest",
+                "deps/imgui",
+                "deps/imgui/misc/cpp",
+                "deps/lua",
+                "deps/miniz",
+                "deps/nativefiledialog/src/include",
+                "deps/nlohmann",
+                "deps/parallel_hashmap/parallel_hashmap",
+                "deps/parmscript",
+                "deps/pybind11/include",
+                "deps/s7",
+                "deps/sol2/include",
+                "deps/spdlog/include",
+                "deps/spdlog/include/spdlog",
+                "deps/stduuid",
+                "deps/stduuid/include",
+                "deps/subprocess.h"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "windows-clang-x64",
+            "compileCommands": "${workspaceFolder}/compile_commands.json"
+        }
+    ],
+    "version": 4
+}
