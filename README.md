@@ -80,6 +80,14 @@ dense or sparse, it's easy to keep track on the relationship of nodes and links:
 
 ![selection](screenshots/GIF_adv_select.gif)
 
+### Type checking
+
+![type check](screenshots/GIF_typecheck.gif)
+
+### Highlight node color / highlight pin color (type hinting)
+
+![link color](screenshots/GIF_linkcolor.gif)
+
 
 ### Command palette
 

@@ -730,6 +730,17 @@ void NetworkView::addCommands(CommandManager* mgr)
     Shortcut{'U', ModKey::NONE},
     "network"}).setMayModifyGraph(false);
 
+  mgr->add(new CommandManager::SimpleCommand{
+    "View/ToggleDisplayTypeHint",
+    "Toggle Display Type Hint",
+    [](GraphView* view, StringView) {
+      assert(view->kind() == "network");
+      auto* nv = static_cast<NetworkView*>(view);
+      nv->canvas()->setDisplayTypeHint(!nv->canvas()->displayTypeHint());
+    },
+    Shortcut{'T', ModKey::ALT},
+    "network"}).setMayModifyGraph(false);
+
   /* currently still handled in HandleShortcut state
   mgr->add(CommandManager::Command{
     "Edit/EnterSubnet", "Enter Subnet",

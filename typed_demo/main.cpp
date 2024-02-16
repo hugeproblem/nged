@@ -54,6 +54,13 @@ static DummyTypedNodeDef defs[] = {
   { "null", 1, 1, {"any"}, {"any"} },
   { "sumint", 2, 1, {"int", "int"}, {"int"} },
   { "sumfloat", 2, 1, {"float", "float"}, {"float"} },
+  { "pow", 2, 1, {"float", "int"}, {"float"} },
+  { "makefloat", 0, 1, {}, {"float"}},
+  { "makeint", 0, 1, {}, {"int"} },
+  { "floor", 1, 1, {"float"}, {"int"} },
+  { "ceil", 1, 1, {"float"}, {"int"} },
+  { "round", 1, 1, {"float"}, {"int"} },
+  { "almost_equal", 2, 1, {"int", "float"}, {"bool"} },
   { "lambda", 0, 1, {}, {"func"} },
   { "out", 1, 0, {"any"}, {} },
   { "in", 0, 1, {}, {"any"} }
@@ -155,7 +162,6 @@ class DemoApp: public nged::App
     nged::ImGuiResource::reloadFonts();
     auto doc = editor->createNewDocAndDefaultViews();
     auto root = doc->root();
-    doc->root()->createNode("in");
   }
 
   char    const* title() { return "Demo"; }

@@ -1861,7 +1861,7 @@ void HandleView::draw(NetworkView* view)
     auto* node = view->graph()->get(pin.node)->asNode();
     assert(node);
     Vec2               pos   = view->graph()->pinPos(pin);
-    Canvas::ShapeStyle style = {true, toUint32RGBA(node->color()), 0.f, 0x0};
+    Canvas::ShapeStyle style = {true, toUint32RGBA(view->graph()->pinColor(pin)), 0.f, 0x0};
     view->canvas()->drawCircle(pos, UIStyle::instance().nodePinRadius*1.5f, 0, style);
   }
 }
@@ -2739,16 +2739,10 @@ bool CreateNodeState::update(NetworkView* view)
           view->editor()->responser()->afterItemAdded(view->graph().get(), pendingItemToPlace_.get());
         if (pendingInputLink_.sourceItem != ID_None) {
           if (
-            pendingItemToPlace_->asRouter() ||
-            pendingItemToPlace_->asNode() && pendingItemToPlace_->asNode()->numMaxInputs() != 0)
-            if (
-              view->editor()->setLink(view->graph().get(), view,
-                pendingInputLink_.sourceItem, pendingInputLink_.sourcePort, id, 0)) {
-              auto* srccolor = view->graph()->get(pendingInputLink_.sourceItem)->asDyeable();
-              auto* dstcolor = pendingItemToPlace_->asDyeable();
-              if (srccolor && dstcolor)
-                dstcolor->setColor(srccolor->color());
-            }
+              pendingItemToPlace_->asRouter() ||
+              pendingItemToPlace_->asNode() && pendingItemToPlace_->asNode()->numMaxInputs() != 0)
+            view->editor()->setLink(view->graph().get(), view,
+              pendingInputLink_.sourceItem, pendingInputLink_.sourcePort, id, 0);
         }
         if (pendingOutputLink_.destItem != ID_None) {
           if (

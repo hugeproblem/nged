@@ -70,7 +70,7 @@ void Node::draw(Canvas* canvas, GraphItemState state) const
             if (auto* node = srcitem->asNode())
               pinstyle.fillColor = gmath::toUint32RGBA(node->outputPinColor(input.sourcePort));
             else if (auto* router = srcitem->asRouter())
-              pinstyle.fillColor = gmath::toUint32RGBA(router->color());
+              pinstyle.fillColor = gmath::toUint32RGBA(router->linkColor());
           }
         } else {
           pinstyle.fillColor = gmath::toUint32RGBA(inputPinColor(i));
@@ -130,8 +130,12 @@ void Link::draw(Canvas* canvas, GraphItemState state) const
     UIStyle::instance().linkStrokeWidth, // strokeWidth
     UIStyle::instance().linkDefaultColor};
   if (auto srcitem = parent()->get(input_.sourceItem)) {
-    if (auto* node = srcitem->asNode()) {
+    if (auto* dye = srcitem->asDyeable(); dye && !canvas->displayTypeHint()) {
+      style.strokeColor = gmath::toUint32RGBA(dye->color());
+    } else if (auto* node = srcitem->asNode()) {
       style.strokeColor = gmath::toUint32RGBA(node->outputPinColor(input_.sourcePort));
+    } else if (auto* router = srcitem->asRouter()) {
+      style.strokeColor = gmath::toUint32RGBA(router->linkColor());
     } else if (auto* dye = srcitem->asDyeable()) {
       style.strokeColor = gmath::toUint32RGBA(dye->color());
     }
@@ -156,6 +160,10 @@ void Router::draw(Canvas* canvas, GraphItemState state) const
     0.f,                  // strokeWidth
     0                     // strokeColor
   };
+  if (linkColor() != color_) {
+    style.strokeWidth = 1;
+    style.strokeColor = toUint32RGBA(linkColor_.value());
+  }
   if (state == GraphItemState::HOVERED) {
     style.strokeWidth = 2.f;
     style.strokeColor = 0xaaaaaaff;

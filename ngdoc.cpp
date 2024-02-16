@@ -1128,6 +1128,16 @@ LinkPtr Graph::setLink(ItemID sourceItem, sint sourcePort, ItemID destItem, sint
         ptr->calculatePath();
       }
     }
+    if (auto* dstdye = dstitem->asDyeable()) {
+      if (auto* srcdye = srcitem->asDyeable())
+        dstdye->setColor(srcdye->color());
+    }
+    if (dstrouter) {
+      if (srcnodeptr)
+        dstrouter->setLinkColor(srcnodeptr->outputPinColor(sourcePort));
+      else if (srcrouter)
+        dstrouter->setLinkColor(srcrouter->linkColor());
+    }
     doc->notifyGraphModified(this);
     return linkptr;
   }
@@ -1254,6 +1264,25 @@ Vec2 Graph::pinDir(NodePin pin) const
   if (!located)
     msghub::errorf("can\'t locate pin {} on node {:x}", pin.pin, pin.node.value());
   return dir;
+}
+
+Color Graph::pinColor(NodePin pin) const
+{
+  Color color;
+  bool  located = false;
+  auto  itemptr = docRoot()->getItem(pin.node);
+  if (auto* node = itemptr->asNode()) {
+    if (pin.type == NodePin::Type::In) {
+      color   = node->inputPinColor(pin.pin);
+      located = true;
+    } else {
+      color   = node->outputPinColor(pin.pin);
+      located = true;
+    }
+  }
+  if (!located)
+    msghub::errorf("can\'t locate pin {} on node {:x}", pin.pin, pin.node.value());
+  return color;
 }
 
 Vector<Vec2> Graph::calculatePath(

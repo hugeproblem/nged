@@ -706,12 +706,16 @@ class Router
     , public Dyeable
 {
   Color color_;
+  Optional<Color> linkColor_;
 
 public:
   Router(Graph* parent);
 
   virtual Color color() const override { return color_; }
   virtual void  setColor(Color c) override { color_ = c; }
+  
+  Color linkColor() const { return linkColor_.value_or(color_); } // for typed nodes, link color be the hint for type
+  void  setLinkColor(Color c) { linkColor_ = c; }
 
   virtual bool hitTest(Vec2 point) const override;
   virtual void draw(Canvas* canvas, GraphItemState state) const override;
@@ -1037,6 +1041,7 @@ public:
 
   Vec2    pinPos(NodePin pin) const;
   Vec2    pinDir(NodePin pin) const;
+  Color   pinColor(NodePin pin) const;
   LinkPtr getLink(ItemID destItem, sint destPort);
   bool    getLinkSource(ItemID destItem, sint destPort, InputConnection& inConnection);
   bool
@@ -1414,12 +1419,16 @@ public:
     0xffffffff};
 
 protected:
+  // states
   Vec2  viewPos_        = {0, 0};
   Vec2  viewSize_       = {800, 600};
   float viewScale_      = 1.0f;
   Mat3  canvasToScreen_ = {1, 0, 0, 0, 1, 0, 0, 0, 1};
   Mat3  screenToCanvas_ = {1, 0, 0, 0, 1, 0, 0, 0, 1};
   Layer layer_          = Layer::Standard;
+
+  // display options
+  bool displayTypeHint_ = false;
 
   Vector<Layer> layerStack_ = {};
 
@@ -1436,6 +1445,8 @@ public:
   float viewScale() const { return viewScale_; }
   Mat3  canvasToScreen() const { return canvasToScreen_; }
   Mat3  screenToCanvas() const { return screenToCanvas_; }
+  bool  displayTypeHint() const { return displayTypeHint_; }
+  void  setDisplayTypeHint(bool b) { displayTypeHint_ = b; }
 
   void setViewSize(Vec2 size) { viewSize_ = size; }
   void setViewPos(Vec2 pos)
