@@ -103,8 +103,8 @@ struct OutputConnection
 
 struct NodePin
 {
-  ItemID node = ID_None;
-  sint   pin  = -1;
+  ItemID node  = ID_None;
+  sint   index = -1;
   enum class Type
   {
     None,
@@ -113,7 +113,7 @@ struct NodePin
   } type = Type::None;
   bool operator==(NodePin const& that) const
   {
-    return node == that.node && pin == that.pin && type == that.type;
+    return node == that.node && index == that.index && type == that.type;
   }
   bool operator!=(NodePin const& that) const { return !operator==(that); }
 };

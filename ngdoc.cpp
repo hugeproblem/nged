@@ -1231,10 +1231,10 @@ Vec2 Graph::pinPos(NodePin pin) const
   auto itemptr = docRoot()->getItem(pin.node);
   if (auto* node = itemptr->asNode()) {
     if (pin.type == NodePin::Type::In) {
-      pos     = node->inputPinPos(pin.pin);
+      pos     = node->inputPinPos(pin.index);
       located = true;
     } else {
-      pos     = node->outputPinPos(pin.pin);
+      pos     = node->outputPinPos(pin.index);
       located = true;
     }
   } else if (auto* router = itemptr->asRouter()) {
@@ -1242,7 +1242,7 @@ Vec2 Graph::pinPos(NodePin pin) const
     located = true;
   }
   if (!located)
-    msghub::errorf("can\'t locate pin {} on node {:x}", pin.pin, pin.node.value());
+    msghub::errorf("can\'t locate pin {} on node {:x}", pin.index, pin.node.value());
   return pos;
 }
 
@@ -1254,15 +1254,15 @@ Vec2 Graph::pinDir(NodePin pin) const
   auto itemptr = docRoot()->getItem(pin.node);
   if (auto* node = itemptr->asNode()) {
     if (pin.type == NodePin::Type::In) {
-      dir     = node->inputPinDir(pin.pin);
+      dir     = node->inputPinDir(pin.index);
       located = true;
     } else {
-      dir     = node->outputPinDir(pin.pin);
+      dir     = node->outputPinDir(pin.index);
       located = true;
     }
   }
   if (!located)
-    msghub::errorf("can\'t locate pin {} on node {:x}", pin.pin, pin.node.value());
+    msghub::errorf("can\'t locate pin {} on node {:x}", pin.index, pin.node.value());
   return dir;
 }
 
@@ -1273,15 +1273,15 @@ Color Graph::pinColor(NodePin pin) const
   auto  itemptr = docRoot()->getItem(pin.node);
   if (auto* node = itemptr->asNode()) {
     if (pin.type == NodePin::Type::In) {
-      color   = node->inputPinColor(pin.pin);
+      color   = node->inputPinColor(pin.index);
       located = true;
     } else {
-      color   = node->outputPinColor(pin.pin);
+      color   = node->outputPinColor(pin.index);
       located = true;
     }
   }
   if (!located)
-    msghub::errorf("can\'t locate pin {} on node {:x}", pin.pin, pin.node.value());
+    msghub::errorf("can\'t locate pin {} on node {:x}", pin.index, pin.node.value());
   return color;
 }
 

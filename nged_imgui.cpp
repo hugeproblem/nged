@@ -1877,9 +1877,9 @@ void HandleView::draw(NetworkView* view)
     };
     if (pin.type == NodePin::Type::In) {
       String desc = "";
-      node->getInputDescription(pin.pin, desc);
+      node->getInputDescription(pin.index, desc);
       if (StringView type; auto* tn = node->asTypedNode()) {
-        type = tn->inputType(pin.pin);
+        type = tn->inputType(pin.index);
         if (desc.empty() && !type.empty())
           desc = type;
         else if (!desc.empty() && !type.empty())
@@ -1888,9 +1888,9 @@ void HandleView::draw(NetworkView* view)
       DrawTooltip(desc);
     } else if (pin.type == NodePin::Type::Out) {
       String desc = "";
-      node->getOutputDescription(pin.pin, desc);
+      node->getOutputDescription(pin.index, desc);
       if (StringView type; auto* tn = node->asTypedNode()) {
-        type = tn->outputType(pin.pin);
+        type = tn->outputType(pin.index);
         if (desc.empty() && !type.empty())
           desc = type;
         else if (!desc.empty() && !type.empty())
@@ -2294,7 +2294,7 @@ void LinkState::onEnter(NetworkView* view)
   }
   hiddenLink_ = ID_None;
   if (dstPin_ != PIN_None) {
-    if (auto link = view->graph()->getLink(dstPin_.node, dstPin_.pin))
+    if (auto link = view->graph()->getLink(dstPin_.node, dstPin_.index))
       hiddenLink_ = link->id();
     else
       hiddenLink_ = ID_None;
@@ -2337,14 +2337,14 @@ bool LinkState::update(NetworkView* view)
     bool  shiftDown = ImGui::GetIO().KeyMods == ImGuiMod_Shift;
     if (srcPin_ != PIN_None && dropPin.type == NodePin::Type::In && dropPin.node != srcPin_.node) {
       auto srcNode = srcPin_.node;
-      auto srcPin  = srcPin_.pin;
+      auto srcPin  = srcPin_.index;
       auto dstNode = dropPin.node;
-      auto dstPin  = dropPin.pin;
+      auto dstPin  = dropPin.index;
       if (shiftDown) {
-        view->editor()->swapOutput(view->graph().get(), srcNode, srcPin, dstPin_.node, dstPin_.pin, dstNode, dstPin);
+        view->editor()->swapOutput(view->graph().get(), srcNode, srcPin, dstPin_.node, dstPin_.index, dstNode, dstPin);
       } else {
         if (dstPin_ != PIN_None) {
-          view->editor()->removeLink(view->graph().get(), dstPin_.node, dstPin_.pin);
+          view->editor()->removeLink(view->graph().get(), dstPin_.node, dstPin_.index);
         }
         view->editor()->setLink(view->graph().get(), view, srcNode, srcPin, dstNode, dstPin);
       }
@@ -2352,11 +2352,11 @@ bool LinkState::update(NetworkView* view)
     if (
       dstPin_ != PIN_None && dropPin.type == NodePin::Type::Out && dropPin.node != dstPin_.node) {
       auto srcNode = dropPin.node;
-      auto srcPin  = dropPin.pin;
+      auto srcPin  = dropPin.index;
       auto dstNode = dstPin_.node;
-      auto dstPin  = dstPin_.pin;
+      auto dstPin  = dstPin_.index;
       if (shiftDown) {
-        view->editor()->swapInput(view->graph().get(), srcPin_.node, srcPin_.pin, srcNode, srcPin, dstNode, dstPin);
+        view->editor()->swapInput(view->graph().get(), srcPin_.node, srcPin_.index, srcNode, srcPin, dstNode, dstPin);
       } else {
         view->editor()->setLink(view->graph().get(), view, srcNode, srcPin, dstNode, dstPin);
       }
@@ -2367,19 +2367,19 @@ bool LinkState::update(NetworkView* view)
       if (item && item->asNode()) {
         auto* node = item->asNode();
         if (srcPin_ != PIN_None) {
-          auto pin = node->getPinForIncomingLink(srcPin_.node, srcPin_.pin);
-          view->editor()->setLink(view->graph().get(), view, srcPin_.node, srcPin_.pin, dropItemID, pin);
+          auto pin = node->getPinForIncomingLink(srcPin_.node, srcPin_.index);
+          view->editor()->setLink(view->graph().get(), view, srcPin_.node, srcPin_.index, dropItemID, pin);
         }
         if (dstPin_ != PIN_None) {
           if (node->numOutputs() > 0)
-            view->editor()->setLink(view->graph().get(), view, dropItemID, 0, dstPin_.node, dstPin_.pin);
+            view->editor()->setLink(view->graph().get(), view, dropItemID, 0, dstPin_.node, dstPin_.index);
         }
       } else if (item && item->asRouter()) {
         auto* router = item->asRouter();
         if (srcPin_ != PIN_None)
-          view->editor()->setLink(view->graph().get(), view, srcPin_.node, srcPin_.pin, dropItemID, 0);
+          view->editor()->setLink(view->graph().get(), view, srcPin_.node, srcPin_.index, dropItemID, 0);
         if (dstPin_ != PIN_None)
-          view->editor()->setLink(view->graph().get(), view, dropItemID, 0, dstPin_.node, dstPin_.pin);
+          view->editor()->setLink(view->graph().get(), view, dropItemID, 0, dstPin_.node, dstPin_.index);
       }
     }
     return true;
@@ -2404,7 +2404,7 @@ void LinkState::onExit(NetworkView* view)
 {
   if (view->hoveringItem() == ID_None && view->hoveringPin() == PIN_None) {
     if (auto createNode = view->getState<CreateNodeState>())
-      createNode->activate({ srcPin_.node, srcPin_.pin }, { dstPin_.node, dstPin_.pin });
+      createNode->activate({ srcPin_.node, srcPin_.index }, { dstPin_.node, dstPin_.index });
   } else {
     if (hiddenLink_ != ID_None)
       view->unhideItem(hiddenLink_);
@@ -2575,10 +2575,10 @@ void CreateNodeState::onEnter(NetworkView* view)
     pendingOutputLink_ = {ID_None, -1};
     if (auto linkState = view->getState<LinkState>()) {
       if (auto pin = linkState->srcPin(); pin != PIN_None) {
-        pendingInputLink_ = {pin.node, pin.pin};
+        pendingInputLink_ = {pin.node, pin.index};
       }
       if (auto pin = linkState->dstPin(); pin != PIN_None) {
-        pendingOutputLink_ = {pin.node, pin.pin};
+        pendingOutputLink_ = {pin.node, pin.index};
       }
     }
   }
