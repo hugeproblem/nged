@@ -1863,6 +1863,41 @@ void HandleView::draw(NetworkView* view)
     Vec2               pos   = view->graph()->pinPos(pin);
     Canvas::ShapeStyle style = {true, toUint32RGBA(view->graph()->pinColor(pin)), 0.f, 0x0};
     view->canvas()->drawCircle(pos, UIStyle::instance().nodePinRadius*1.5f, 0, style);
+
+    auto constexpr DrawTooltip = [](StringView text) {
+      if (text.empty())
+        return;
+      ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(4, 4));
+      ImGui::PushStyleColor(ImGuiCol_PopupBg, 0xDD2E344E);
+      ImGui::BeginTooltip();
+      ImGui::TextUnformatted(text.data(), text.data() + text.size());
+      ImGui::EndTooltip();
+      ImGui::PopStyleColor();
+      ImGui::PopStyleVar();
+    };
+    if (pin.type == NodePin::Type::In) {
+      String desc = "";
+      node->getInputDescription(pin.pin, desc);
+      if (StringView type; auto* tn = node->asTypedNode()) {
+        type = tn->inputType(pin.pin);
+        if (desc.empty() && !type.empty())
+          desc = type;
+        else if (!desc.empty() && !type.empty())
+          desc = fmt::format("{}: {}", desc, type);
+      }
+      DrawTooltip(desc);
+    } else if (pin.type == NodePin::Type::Out) {
+      String desc = "";
+      node->getOutputDescription(pin.pin, desc);
+      if (StringView type; auto* tn = node->asTypedNode()) {
+        type = tn->outputType(pin.pin);
+        if (desc.empty() && !type.empty())
+          desc = type;
+        else if (!desc.empty() && !type.empty())
+          desc = fmt::format("{}: {}", desc, type);
+      }
+      DrawTooltip(desc);
+    }
   }
 }
 // }}} HandleView
