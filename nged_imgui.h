@@ -303,7 +303,8 @@ class ResizeBoxState : public NetworkView::NamedInteractionState<ResizeBoxState>
     Bottom,
     BottomLeft,
     Left,
-    TopLeft
+    TopLeft,
+    All
   } resizingWhere_;
 
 public:

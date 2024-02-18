@@ -2098,7 +2098,11 @@ bool ResizeBoxState::shouldEnter(NetworkView const* view) const
         case 2|8: location = BottomRight; break;
         default:  location = Nowhere; break;
       }
-      updateCursor(location);
+      if (auto* group = item->asGroupBox();
+          location == Nowhere && group && group->hitTest(mousepos)) 
+        updateCursor(All);
+      else
+        updateCursor(location);
 
       if (ImGui::IsMouseClicked(ImGuiMouseButton_Left) && location != Nowhere) {
         const_cast<ResizeBoxState*>(this)->activate(item, location);
@@ -2151,6 +2155,7 @@ void ResizeBoxState::updateCursor(ResizeBoxState::ResizingLocation location) con
     ImGuiMouseCursor_ResizeNESW, // bottomleft
     ImGuiMouseCursor_ResizeEW,   // left
     ImGuiMouseCursor_ResizeNWSE, // topleft
+    ImGuiMouseCursor_ResizeAll,  // all
   };
   ImGui::SetMouseCursor(cursors[location]);
 }
