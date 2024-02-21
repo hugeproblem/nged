@@ -8,6 +8,7 @@
                 "deps/boxer/include",
                 "deps/doctest",
                 "deps/imgui",
+                "deps/imgui/backends",
                 "deps/imgui/misc/cpp",
                 "deps/lua",
                 "deps/miniz",
