@@ -6,6 +6,7 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx11.h"
 #include "entry.h"
+#include "texture.h"
 #include <d3d11.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>
@@ -288,4 +289,10 @@ void startApp(nged::App* app)
   startMainLoop();
 }
 
+TexturePtr uploadTexture(uint8_t const* data, int width, int height, AddressMode address, FilterMode filter)
+{
+  return uploadTextureDX11(g_pd3dDevice, data, width, height, address, filter);
 }
+
+} // namespace nged
+

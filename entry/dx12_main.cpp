@@ -7,6 +7,8 @@
 #include "imgui_impl_win32.h"
 #include "imgui_impl_dx12.h"
 #include "entry.h"
+#include "texture.h"
+#include "dx12_texture.h"
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <tchar.h>
@@ -141,6 +143,7 @@ int startMainLoop()
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
+    initializeTextureResourcePool(g_pd3dDevice, g_pd3dSrvDescHeap);
     theApp->init();
 
     // Main loop
@@ -217,6 +220,7 @@ int startMainLoop()
     ImGui_ImplWin32_Shutdown();
     ImGui::DestroyContext();
 
+    releaseAllTextureResources();
     CleanupDeviceD3D();
     ::DestroyWindow(hwnd);
     ::UnregisterClass(wc.lpszClassName, wc.hInstance);
@@ -293,7 +297,7 @@ bool CreateDeviceD3D(HWND hWnd)
     {
         D3D12_DESCRIPTOR_HEAP_DESC desc = {};
         desc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        desc.NumDescriptors = 1;
+        desc.NumDescriptors = 1 + NGED_MAX_NUM_TEXTURES;
         desc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         if (g_pd3dDevice->CreateDescriptorHeap(&desc, IID_PPV_ARGS(&g_pd3dSrvDescHeap)) != S_OK)
             return false;
@@ -486,6 +490,12 @@ void startApp(nged::App* app)
 {
   theApp = app;
   startMainLoop();
+}
+
+TexturePtr uploadTexture(
+  uint8_t const* data, int width, int height, AddressMode addrMode, FilterMode filter)
+{
+  return uploadTextureDX12(g_pd3dDevice, data, width, height, addrMode, filter);
 }
 
 } // namespace nged

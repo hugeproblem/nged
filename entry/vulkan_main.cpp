@@ -13,6 +13,8 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 #include "entry.h"
+#include "texture.h"
+#include "vulkan_texture.h"
 #include <stdio.h>          // printf, fprintf
 #include <stdlib.h>         // abort
 #define GLFW_INCLUDE_NONE
@@ -33,8 +35,8 @@ static nged::App* theApp = nullptr;
 
 
 //#define IMGUI_UNLIMITED_FRAME_RATE
-#ifdef _DEBUG
-#define IMGUI_VULKAN_DEBUG_REPORT
+#if defined(_DEBUG) || defined(DEBUG)
+#define APP_USE_VULKAN_DEBUG_REPORT
 #endif
 
 static VkAllocationCallbacks*   g_Allocator = NULL;
@@ -51,6 +53,11 @@ static ImGui_ImplVulkanH_Window g_MainWindowData;
 static int                      g_MinImageCount = 2;
 static bool                     g_SwapChainRebuild = false;
 
+
+static void glfw_error_callback(int error, const char* description)
+{
+    fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
 static void check_vk_result(VkResult err)
 {
     if (err == 0)
@@ -60,16 +67,53 @@ static void check_vk_result(VkResult err)
         abort();
 }
 
-#ifdef IMGUI_VULKAN_DEBUG_REPORT
+#ifdef APP_USE_VULKAN_DEBUG_REPORT
 static VKAPI_ATTR VkBool32 VKAPI_CALL debug_report(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, uint64_t object, size_t location, int32_t messageCode, const char* pLayerPrefix, const char* pMessage, void* pUserData)
 {
     (void)flags; (void)object; (void)location; (void)messageCode; (void)pUserData; (void)pLayerPrefix; // Unused arguments
     fprintf(stderr, "[vulkan] Debug report from ObjectType: %i\nMessage: %s\n\n", objectType, pMessage);
     return VK_FALSE;
 }
-#endif // IMGUI_VULKAN_DEBUG_REPORT
+#endif // APP_USE_VULKAN_DEBUG_REPORT
 
-static void SetupVulkan(const char** extensions, uint32_t extensions_count)
+static bool IsExtensionAvailable(const ImVector<VkExtensionProperties>& properties, const char* extension)
+{
+    for (const VkExtensionProperties& p : properties)
+        if (strcmp(p.extensionName, extension) == 0)
+            return true;
+    return false;
+}
+
+static VkPhysicalDevice SetupVulkan_SelectPhysicalDevice()
+{
+    uint32_t gpu_count;
+    VkResult err = vkEnumeratePhysicalDevices(g_Instance, &gpu_count, nullptr);
+    check_vk_result(err);
+    IM_ASSERT(gpu_count > 0);
+
+    ImVector<VkPhysicalDevice> gpus;
+    gpus.resize(gpu_count);
+    err = vkEnumeratePhysicalDevices(g_Instance, &gpu_count, gpus.Data);
+    check_vk_result(err);
+
+    // If a number >1 of GPUs got reported, find discrete GPU if present, or use first one available. This covers
+    // most common cases (multi-gpu/integrated+dedicated graphics). Handling more complicated setups (multiple
+    // dedicated GPUs) is out of scope of this sample.
+    for (VkPhysicalDevice& device : gpus)
+    {
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(device, &properties);
+        if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            return device;
+    }
+
+    // Use first GPU (Integrated) is a Discrete one is not available.
+    if (gpu_count > 0)
+        return gpus[0];
+    return VK_NULL_HANDLE;
+}
+
+static void SetupVulkan(ImVector<const char*> instance_extensions)
 {
     VkResult err;
 
@@ -77,68 +121,61 @@ static void SetupVulkan(const char** extensions, uint32_t extensions_count)
     {
         VkInstanceCreateInfo create_info = {};
         create_info.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-        create_info.enabledExtensionCount = extensions_count;
-        create_info.ppEnabledExtensionNames = extensions;
-#ifdef IMGUI_VULKAN_DEBUG_REPORT
+
+        // Enumerate available extensions
+        uint32_t properties_count;
+        ImVector<VkExtensionProperties> properties;
+        vkEnumerateInstanceExtensionProperties(nullptr, &properties_count, nullptr);
+        properties.resize(properties_count);
+        err = vkEnumerateInstanceExtensionProperties(nullptr, &properties_count, properties.Data);
+        check_vk_result(err);
+
+        // Enable required extensions
+        if (IsExtensionAvailable(properties, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME))
+            instance_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+#ifdef VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME
+        if (IsExtensionAvailable(properties, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME))
+        {
+            instance_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+            create_info.flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+        }
+#endif
+
         // Enabling validation layers
+#ifdef APP_USE_VULKAN_DEBUG_REPORT
         const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
         create_info.enabledLayerCount = 1;
         create_info.ppEnabledLayerNames = layers;
-
-        // Enable debug report extension (we need additional storage, so we duplicate the user array to add our new extension to it)
-        const char** extensions_ext = (const char**)malloc(sizeof(const char*) * (extensions_count + 1));
-        memcpy(extensions_ext, extensions, extensions_count * sizeof(const char*));
-        extensions_ext[extensions_count] = "VK_EXT_debug_report";
-        create_info.enabledExtensionCount = extensions_count + 1;
-        create_info.ppEnabledExtensionNames = extensions_ext;
+        instance_extensions.push_back("VK_EXT_debug_report");
+#endif
 
         // Create Vulkan Instance
+        create_info.enabledExtensionCount = (uint32_t)instance_extensions.Size;
+        create_info.ppEnabledExtensionNames = instance_extensions.Data;
         err = vkCreateInstance(&create_info, g_Allocator, &g_Instance);
         check_vk_result(err);
-        free(extensions_ext);
-
-        // Get the function pointer (required for any extensions)
-        auto vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(g_Instance, "vkCreateDebugReportCallbackEXT");
-        IM_ASSERT(vkCreateDebugReportCallbackEXT != NULL);
 
         // Setup the debug report callback
+#ifdef APP_USE_VULKAN_DEBUG_REPORT
+        auto vkCreateDebugReportCallbackEXT = (PFN_vkCreateDebugReportCallbackEXT)vkGetInstanceProcAddr(g_Instance, "vkCreateDebugReportCallbackEXT");
+        IM_ASSERT(vkCreateDebugReportCallbackEXT != nullptr);
         VkDebugReportCallbackCreateInfoEXT debug_report_ci = {};
         debug_report_ci.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT;
         debug_report_ci.flags = VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
         debug_report_ci.pfnCallback = debug_report;
-        debug_report_ci.pUserData = NULL;
+        debug_report_ci.pUserData = nullptr;
         err = vkCreateDebugReportCallbackEXT(g_Instance, &debug_report_ci, g_Allocator, &g_DebugReport);
         check_vk_result(err);
-#else
-        // Create Vulkan Instance without any debug feature
-        err = vkCreateInstance(&create_info, g_Allocator, &g_Instance);
-        check_vk_result(err);
-        IM_UNUSED(g_DebugReport);
 #endif
     }
 
-    // Select GPU
-    {
-        uint32_t gpu_count;
-        err = vkEnumeratePhysicalDevices(g_Instance, &gpu_count, NULL);
-        check_vk_result(err);
-        IM_ASSERT(gpu_count > 0);
-
-        VkPhysicalDevice* gpus = (VkPhysicalDevice*)malloc(sizeof(VkPhysicalDevice) * gpu_count);
-        err = vkEnumeratePhysicalDevices(g_Instance, &gpu_count, gpus);
-        check_vk_result(err);
-
-        // If a number >1 of GPUs got reported, you should find the best fit GPU for your purpose
-        // e.g. VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU if available, or with the greatest memory available, etc.
-        // for sake of simplicity we'll just take the first one, assuming it has a graphics queue family.
-        g_PhysicalDevice = gpus[0];
-        free(gpus);
-    }
+    // Select Physical Device (GPU)
+    g_PhysicalDevice = SetupVulkan_SelectPhysicalDevice();
 
     // Select graphics queue family
     {
         uint32_t count;
-        vkGetPhysicalDeviceQueueFamilyProperties(g_PhysicalDevice, &count, NULL);
+        vkGetPhysicalDeviceQueueFamilyProperties(g_PhysicalDevice, &count, nullptr);
         VkQueueFamilyProperties* queues = (VkQueueFamilyProperties*)malloc(sizeof(VkQueueFamilyProperties) * count);
         vkGetPhysicalDeviceQueueFamilyProperties(g_PhysicalDevice, &count, queues);
         for (uint32_t i = 0; i < count; i++)
@@ -153,8 +190,20 @@ static void SetupVulkan(const char** extensions, uint32_t extensions_count)
 
     // Create Logical Device (with 1 queue)
     {
-        int device_extension_count = 1;
-        const char* device_extensions[] = { "VK_KHR_swapchain" };
+        ImVector<const char*> device_extensions;
+        device_extensions.push_back("VK_KHR_swapchain");
+
+        // Enumerate physical device extension
+        uint32_t properties_count;
+        ImVector<VkExtensionProperties> properties;
+        vkEnumerateDeviceExtensionProperties(g_PhysicalDevice, nullptr, &properties_count, nullptr);
+        properties.resize(properties_count);
+        vkEnumerateDeviceExtensionProperties(g_PhysicalDevice, nullptr, &properties_count, properties.Data);
+#ifdef VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME
+        if (IsExtensionAvailable(properties, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME))
+            device_extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+#endif
+
         const float queue_priority[] = { 1.0f };
         VkDeviceQueueCreateInfo queue_info[1] = {};
         queue_info[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
@@ -165,33 +214,25 @@ static void SetupVulkan(const char** extensions, uint32_t extensions_count)
         create_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
         create_info.queueCreateInfoCount = sizeof(queue_info) / sizeof(queue_info[0]);
         create_info.pQueueCreateInfos = queue_info;
-        create_info.enabledExtensionCount = device_extension_count;
-        create_info.ppEnabledExtensionNames = device_extensions;
+        create_info.enabledExtensionCount = (uint32_t)device_extensions.Size;
+        create_info.ppEnabledExtensionNames = device_extensions.Data;
         err = vkCreateDevice(g_PhysicalDevice, &create_info, g_Allocator, &g_Device);
         check_vk_result(err);
         vkGetDeviceQueue(g_Device, g_QueueFamily, 0, &g_Queue);
     }
 
     // Create Descriptor Pool
+    // The example only requires a single combined image sampler descriptor for the font image and only uses one descriptor set (for that)
+    // If you wish to load e.g. additional textures you may need to alter pools sizes.
     {
         VkDescriptorPoolSize pool_sizes[] =
         {
-            { VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
-            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
-            { VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
-            { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
-            { VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
-            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
-            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
-            { VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
         };
         VkDescriptorPoolCreateInfo pool_info = {};
         pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
         pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-        pool_info.maxSets = 1000 * IM_ARRAYSIZE(pool_sizes);
+        pool_info.maxSets = 1 + NGED_MAX_NUM_TEXTURES;
         pool_info.poolSizeCount = (uint32_t)IM_ARRAYSIZE(pool_sizes);
         pool_info.pPoolSizes = pool_sizes;
         err = vkCreateDescriptorPool(g_Device, &pool_info, g_Allocator, &g_DescriptorPool);
@@ -220,7 +261,7 @@ static void SetupVulkanWindow(ImGui_ImplVulkanH_Window* wd, VkSurfaceKHR surface
     wd->SurfaceFormat = ImGui_ImplVulkanH_SelectSurfaceFormat(g_PhysicalDevice, wd->Surface, requestSurfaceImageFormat, (size_t)IM_ARRAYSIZE(requestSurfaceImageFormat), requestSurfaceColorSpace);
 
     // Select Present Mode
-#ifdef IMGUI_UNLIMITED_FRAME_RATE
+#ifdef APP_USE_UNLIMITED_FRAME_RATE
     VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_MAILBOX_KHR, VK_PRESENT_MODE_IMMEDIATE_KHR, VK_PRESENT_MODE_FIFO_KHR };
 #else
     VkPresentModeKHR present_modes[] = { VK_PRESENT_MODE_FIFO_KHR };
@@ -237,11 +278,11 @@ static void CleanupVulkan()
 {
     vkDestroyDescriptorPool(g_Device, g_DescriptorPool, g_Allocator);
 
-#ifdef IMGUI_VULKAN_DEBUG_REPORT
+#ifdef APP_USE_VULKAN_DEBUG_REPORT
     // Remove the debug report callback
     auto vkDestroyDebugReportCallbackEXT = (PFN_vkDestroyDebugReportCallbackEXT)vkGetInstanceProcAddr(g_Instance, "vkDestroyDebugReportCallbackEXT");
     vkDestroyDebugReportCallbackEXT(g_Instance, g_DebugReport, g_Allocator);
-#endif // IMGUI_VULKAN_DEBUG_REPORT
+#endif // APP_USE_VULKAN_DEBUG_REPORT
 
     vkDestroyDevice(g_Device, g_Allocator);
     vkDestroyInstance(g_Instance, g_Allocator);
@@ -338,21 +379,16 @@ static void FramePresent(ImGui_ImplVulkanH_Window* wd)
         return;
     }
     check_vk_result(err);
-    wd->SemaphoreIndex = (wd->SemaphoreIndex + 1) % wd->ImageCount; // Now we can use the next set of semaphores
-}
-
-static void glfw_error_callback(int error, const char* description)
-{
-    fprintf(stderr, "Glfw Error %d: %s\n", error, description);
+    wd->SemaphoreIndex = (wd->SemaphoreIndex + 1) % wd->SemaphoreCount; // Now we can use the next set of semaphores
 }
 
 static void glfw_close_callback(GLFWwindow* window)
 {
   if (!theApp->agreeToQuit())
-    glfwSetWindowShouldClose(window, GL_FALSE);
+    glfwSetWindowShouldClose(window, false);
 }
 
-int main(int, char**)
+int startMainLoop()
 {
     // Setup GLFW window
     glfwSetErrorCallback(glfw_error_callback);
@@ -368,10 +404,14 @@ int main(int, char**)
         printf("GLFW: Vulkan Not Supported\n");
         return 1;
     }
-    uint32_t extensions_count = 0;
-    const char** extensions = glfwGetRequiredInstanceExtensions(&extensions_count);
-    SetupVulkan(extensions, extensions_count);
 
+    ImVector<const char*> extensions;
+    uint32_t extensions_count = 0;
+    const char** glfw_extensions = glfwGetRequiredInstanceExtensions(&extensions_count);
+    for (uint32_t i = 0; i < extensions_count; i++)
+        extensions.push_back(glfw_extensions[i]);
+    SetupVulkan(extensions);
+    
     glfwSetWindowCloseCallback(window, glfw_close_callback);
 
     // Create Window Surface
@@ -418,11 +458,14 @@ int main(int, char**)
     init_info.Queue = g_Queue;
     init_info.PipelineCache = g_PipelineCache;
     init_info.DescriptorPool = g_DescriptorPool;
-    init_info.Allocator = g_Allocator;
+    init_info.RenderPass = wd->RenderPass;
+    init_info.Subpass = 0;
     init_info.MinImageCount = g_MinImageCount;
     init_info.ImageCount = wd->ImageCount;
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    init_info.Allocator = g_Allocator;
     init_info.CheckVkResultFn = check_vk_result;
-    ImGui_ImplVulkan_Init(&init_info, wd->RenderPass);
+    ImGui_ImplVulkan_Init(&init_info);
 
     // Load Fonts
     // - If no fonts are loaded, dear imgui will use the default font. You can also load multiple fonts and use ImGui::PushFont()/PopFont() to select them.
@@ -438,36 +481,6 @@ int main(int, char**)
     //io.Fonts->AddFontFromFileTTF("../../misc/fonts/ProggyTiny.ttf", 10.0f);
     //ImFont* font = io.Fonts->AddFontFromFileTTF("c:\\Windows\\Fonts\\ArialUni.ttf", 18.0f, NULL, io.Fonts->GetGlyphRangesJapanese());
     //IM_ASSERT(font != NULL);
-
-    // Upload Fonts
-    {
-        // Use any command queue
-        VkCommandPool command_pool = wd->Frames[wd->FrameIndex].CommandPool;
-        VkCommandBuffer command_buffer = wd->Frames[wd->FrameIndex].CommandBuffer;
-
-        err = vkResetCommandPool(g_Device, command_pool, 0);
-        check_vk_result(err);
-        VkCommandBufferBeginInfo begin_info = {};
-        begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        begin_info.flags |= VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-        err = vkBeginCommandBuffer(command_buffer, &begin_info);
-        check_vk_result(err);
-
-        ImGui_ImplVulkan_CreateFontsTexture(command_buffer);
-
-        VkSubmitInfo end_info = {};
-        end_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        end_info.commandBufferCount = 1;
-        end_info.pCommandBuffers = &command_buffer;
-        err = vkEndCommandBuffer(command_buffer);
-        check_vk_result(err);
-        err = vkQueueSubmit(g_Queue, 1, &end_info, VK_NULL_HANDLE);
-        check_vk_result(err);
-
-        err = vkDeviceWaitIdle(g_Device);
-        check_vk_result(err);
-        ImGui_ImplVulkan_DestroyFontUploadObjects();
-    }
 
     // Our state
     bool show_demo_window = true;
@@ -532,6 +545,8 @@ int main(int, char**)
     // Cleanup
     err = vkDeviceWaitIdle(g_Device);
     check_vk_result(err);
+
+    releaseAllTextureResources();
     ImGui_ImplVulkan_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -549,6 +564,20 @@ void startApp(nged::App* app)
 {
   theApp = app;
   startMainLoop();
+}
+
+TexturePtr uploadTexture(
+  uint8_t const* data,
+  int width,
+  int height,
+  AddressMode address,
+  FilterMode filter
+)
+{
+  return uploadTextureVK(
+    g_Device, g_PhysicalDevice, g_Queue, g_MainWindowData.Frames[g_MainWindowData.FrameIndex].CommandPool, g_Allocator,
+    data, width, height, address, filter
+  );
 }
 
 } // namespace nged

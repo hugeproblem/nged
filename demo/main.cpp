@@ -4,6 +4,7 @@
 #include "nged.h"
 #include "nged_imgui.h"
 #include "style.h"
+#include "entry/texture.h"
 
 #include <spdlog/spdlog.h>
 #include "entry/entry.h"
@@ -112,6 +113,7 @@ class MyNodeFactory: public nged::NodeFactory
 class DemoApp: public nged::App
 {
   nged::EditorPtr editor = nullptr;
+  nged::TexturePtr tex = nullptr;
 
   void init()
   {
@@ -154,6 +156,20 @@ class DemoApp: public nged::App
     colors[ImGuiCol_TextSelectedBg]     = ImVec4(1.00f, 1.00f, 1.00f, 0.35f);
     colors[ImGuiCol_NavHighlight]       = ImVec4(0.78f, 0.78f, 0.78f, 1.00f);
 
+    // test image functions
+    int width = 256, height = 256;
+    uint8_t *pixels = new uint8_t[width*height*4];
+    for (int y = 0; y < height; y++)
+      for (int x = 0; x < width; x++)
+      {
+        pixels[(y*width+x)*4+0] = x;
+        pixels[(y*width+x)*4+1] = y;
+        pixels[(y*width+x)*4+2] = 0;
+        pixels[(y*width+x)*4+3] = 255;
+      }
+    tex = nged::uploadTexture(pixels, width, height);
+    delete[] pixels;
+
     editor = nged::newImGuiNodeGraphEditor();
     editor->setResponser(std::make_shared<nged::DefaultImGuiResponser>());
     editor->setItemFactory(nged::addImGuiItems(nged::defaultGraphItemFactory()));
@@ -183,10 +199,15 @@ class DemoApp: public nged::App
     editor->update(dt.count()/1000.f);
     editor->draw();
     ImGui::PopFont();
+    if (tex && ImGui::Begin("Texture Window")) {
+      ImGui::Image(tex->id(), ImVec2(256, 256));
+    }
+    ImGui::End();
     prev = now;
   }
   void quit()
   {
+    tex = nullptr;
   }
 }; // Demo App
 

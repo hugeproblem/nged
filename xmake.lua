@@ -30,6 +30,17 @@ elseif backend=='gl3' then
   add_defines('IMGUI_IMPL_OPENGL_LOADER_GLEW=1')
   add_links('GLEW')
 end
+if backend=='dx11' then
+  add_defines('NGED_BACKEND_DX11')
+elseif backend=='dx12' then
+  add_defines('NGED_BACKEND_DX12')
+elseif backend=='vulkan' then
+  add_defines('NGED_BACKEND_VULKAN')
+elseif backend=='gl2' then
+  add_defines('NGED_BACKEND_GL2')
+elseif backend=='gl3' then
+  add_defines('NGED_BACKEND_GL3')
+end
 
 option('python')
   set_description('python executable path, or "no" if python binding is not needed')
@@ -41,6 +52,12 @@ option('pyextension_fullpath')
 option('pyincludedirs')
 option('pylibdirs')
 option('pylib')
+
+option('vulkan-sdk')
+  set_description('vulkan sdk path')
+  set_showmenu(true)
+  set_default('')
+local vulkan_sdk = get_config('vulkan-sdk')
 
 rule('pythonlib')
 on_config(function(target)
@@ -72,7 +89,11 @@ target('imgui')
     add_links('d3d12', 'dxgi', 'd3dcompiler')
   elseif backend=='vulkan' then
     add_files('deps/imgui/backends/imgui_impl_glfw.cpp', 'deps/imgui/backends/imgui_impl_vulkan.cpp')
-    add_links('glfw3')
+    if backend=='vulkan' then
+      add_includedirs(vulkan_sdk..'/Include', {public=true})
+      add_linkdirs(vulkan_sdk..'/Lib', {public=true})
+    end
+    add_links('glfw3', 'vulkan-1')
   elseif backend=='gl2' then
     add_files('deps/imgui/backends/imgui_impl_glfw.cpp', 'deps/imgui/backends/imgui_impl_opengl2.cpp')
   elseif backend=='gl3' then
@@ -82,6 +103,8 @@ target('imgui')
     add_links('ole32', 'uuid', 'gdi32', 'comctl32', 'dwmapi')
     if backend=='gl2' or backend=='gl3' then
       add_links('glfw3', 'opengl32')
+      add_packages('vcpkg::glfw3')
+    elseif backend=='vulkan' then
       add_packages('vcpkg::glfw3')
     end
   else
@@ -190,10 +213,13 @@ target('entry')
   add_files('entry/entry.cpp')
   if backend=='dx11' then
     add_files('entry/dx11_main.cpp')
+    add_files('entry/dx11_texture.cpp')
   elseif backend=='dx12' then
     add_files('entry/dx12_main.cpp')
+    add_files('entry/dx12_texture.cpp')
   elseif backend=='vulkan' then
     add_files('entry/vulkan_main.cpp')
+    add_files('entry/vulkan_texture.cpp')
   elseif backend=='gl2' then
     add_files('entry/gl2_main.cpp')
   elseif backend=='gl3' then

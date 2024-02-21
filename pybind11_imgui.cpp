@@ -558,8 +558,8 @@ void bind_imgui_to_py(py::module& m)
   ;
 
   m.def("End", &ImGui::End);
-  m.def("BeginChild", py::overload_cast<ImGuiID, const ImVec2&, bool, ImGuiWindowFlags>(&ImGui::BeginChild), py::arg("id"), py::arg("size") = ImVec2(0, 0), py::arg("border") = false, py::arg("flags") = 0);
-  m.def("BeginChild", py::overload_cast<const char*, const ImVec2&, bool, ImGuiWindowFlags>(&ImGui::BeginChild), py::arg("str_id"), py::arg("size") = ImVec2(0, 0), py::arg("border") = false, py::arg("flags") = 0);
+  m.def("BeginChild", py::overload_cast<ImGuiID, const ImVec2&, ImGuiChildFlags, ImGuiWindowFlags>(&ImGui::BeginChild), py::arg("id"), py::arg("size") = ImVec2(0, 0), py::arg("child_flags") = 0, py::arg("flags") = 0);
+  m.def("BeginChild", py::overload_cast<const char*, const ImVec2&, ImGuiChildFlags, ImGuiWindowFlags>(&ImGui::BeginChild), py::arg("str_id"), py::arg("size") = ImVec2(0, 0), py::arg("child_flags") = 0, py::arg("flags") = 0);
   m.def("EndChild", &ImGui::EndChild);
   m.def("IsWindowAppearing", &ImGui::IsWindowAppearing);
   m.def("IsWindowCollapsed", &ImGui::IsWindowCollapsed);
