@@ -24,8 +24,10 @@ option_end()
 local backend = get_config('backend')
 if is_plat('windows') and (backend=='vulkan' or backend=='gl2' or backend=='gl3') then
   add_requires('vcpkg::glfw3')
-  add_requires('vcpkg::gl3w')
-  add_defines('IMGUI_IMPL_OPENGL_LOADER_GL3W=1')
+  if backend=='gl2' or backend=='gl3' then
+    add_requires('vcpkg::gl3w')
+    add_defines('IMGUI_IMPL_OPENGL_LOADER_GL3W=1')
+  end
 elseif backend=='gl3' then
   add_defines('IMGUI_IMPL_OPENGL_LOADER_GLEW=1')
   add_links('GLEW')
@@ -228,7 +230,10 @@ target('entry')
   if is_plat('windows') then
     add_links('ws2_32', 'advapi32', 'gdi32', 'shell32', 'version')
     if backend~='dx11' and backend~='dx12' then
-      add_packages('vcpkg::gl3w', 'vcpkg::glfw3')
+      add_packages('vcpkg::glfw3')
+    end
+    if backend=='gl2' or backend=='gl3' then
+      add_packages('vcpkg::gl3w')
     end
   end
 

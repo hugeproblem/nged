@@ -538,6 +538,7 @@ int startMainLoop()
         // Present Main Platform Window
         if (!main_is_minimized)
             FramePresent(wd);
+        releaseDeferredTextures();
     }
 
     theApp->quit();

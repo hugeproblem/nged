@@ -48,7 +48,7 @@ ImTextureID Texture::id() const
 
 void Texture::release()
 {
-  resource_->release();
+  deferReleaseTexture(resource_);
   resource_ = nullptr;
 }
 
@@ -359,4 +359,27 @@ void releaseAllTextureResources()
     pool.getResource(i).release();
 }
 
+static std::vector<int>& deferReleaseTextureIndices()
+{
+  static std::vector<int> indices;
+  return indices;
 }
+
+void deferReleaseTexture(TextureResource* resource)
+{
+  auto& indices = deferReleaseTextureIndices();
+  auto index = resourcePool().getIndex(resource);
+  IM_ASSERT(index >= 0 && index < std::numeric_limits<int>::max());
+  indices.push_back(static_cast<int>(index));
+}
+
+void releaseDeferredTextures()
+{
+  auto& indices = deferReleaseTextureIndices();
+  for (auto index : indices)
+    resourcePool().getResource(index).release();
+  indices.clear();
+}
+
+} // namespace nged
+

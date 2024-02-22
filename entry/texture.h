@@ -62,6 +62,7 @@ public:
     freeIndices_.push_back(index);
   }
   TextureResourceImpl& getResource(size_t index) { return resources_[index]; }
+  ptrdiff_t getIndex(TextureResourceImpl* resource) { return resource - resources_; }
 };
 
 
