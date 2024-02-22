@@ -7,6 +7,7 @@
 #include "imgui_impl_dx11.h"
 #include "entry.h"
 #include "texture.h"
+#include "dx11_texture.h"
 #include <d3d11.h>
 #define DIRECTINPUT_VERSION 0x0800
 #include <dinput.h>

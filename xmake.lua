@@ -224,8 +224,10 @@ target('entry')
     add_files('entry/vulkan_texture.cpp')
   elseif backend=='gl2' then
     add_files('entry/gl2_main.cpp')
+    add_files('entry/gl_texture.cpp')
   elseif backend=='gl3' then
     add_files('entry/gl3_main.cpp')
+    add_files('entry/gl_texture.cpp')
   end
   if is_plat('windows') then
     add_links('ws2_32', 'advapi32', 'gdi32', 'shell32', 'version')
