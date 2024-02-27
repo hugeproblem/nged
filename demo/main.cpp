@@ -27,6 +27,7 @@ class DummyNode : public nged::Node
 {
   int numInput=1;
   int numOutput=1;
+  nged::Canvas::ImagePtr icon=nullptr;
 
 public:
   DummyNode(int numInput, int numOutput, nged::Graph* parent, std::string const& type, std::string const& name)
@@ -34,6 +35,17 @@ public:
     , numInput(numInput)
     , numOutput(numOutput)
   {
+    uint8_t pixels[64*64*4] = {0};
+    for (int y = 0; y < 64; y++)
+      for (int x = 0; x < 64; x++)
+      {
+        pixels[(y*64+x)*4+0] = x*4;
+        pixels[(y*64+x)*4+1] = y*4;
+        pixels[(y*64+x)*4+2] = rand()&0xff;
+        auto d = gmath::distance(nged::Vec2(x,y), nged::Vec2(32,32));
+        pixels[(y*64+x)*4+3] = uint8_t(gmath::clamp((31-d)/4.f, 0.f, 1.f)*255.f);
+      }
+    icon = nged::Canvas::createImage(pixels, 64, 64);
   }
   nged::sint numMaxInputs() const override { return numInput; }
   nged::sint numOutputs() const override { return numOutput; }
@@ -43,6 +55,12 @@ public:
     if (srcNode->type() == "picky" && type() == "picky")
       return false;
     return true;
+  }
+  void draw(nged::Canvas* canvas, nged::GraphItemState state) const override
+  {
+    auto left = nged::Vec2(aabb().min.x, pos().y);
+    canvas->drawImage(icon, left-nged::Vec2(40,16), left-nged::Vec2(8,-16));
+    nged::Node::draw(canvas, state);
   }
 };
 
@@ -113,7 +131,6 @@ class MyNodeFactory: public nged::NodeFactory
 class DemoApp: public nged::App
 {
   nged::EditorPtr editor = nullptr;
-  nged::TexturePtr tex = nullptr;
 
   void init()
   {
@@ -156,20 +173,6 @@ class DemoApp: public nged::App
     colors[ImGuiCol_TextSelectedBg]     = ImVec4(1.00f, 1.00f, 1.00f, 0.35f);
     colors[ImGuiCol_NavHighlight]       = ImVec4(0.78f, 0.78f, 0.78f, 1.00f);
 
-    // test image functions
-    int width = 256, height = 256;
-    uint8_t *pixels = new uint8_t[width*height*4];
-    for (int y = 0; y < height; y++)
-      for (int x = 0; x < width; x++)
-      {
-        pixels[(y*width+x)*4+0] = x;
-        pixels[(y*width+x)*4+1] = y;
-        pixels[(y*width+x)*4+2] = 0;
-        pixels[(y*width+x)*4+3] = 255;
-      }
-    tex = nged::uploadTexture(pixels, width, height);
-    delete[] pixels;
-
     editor = nged::newImGuiNodeGraphEditor();
     editor->setResponser(std::make_shared<nged::DefaultImGuiResponser>());
     editor->setItemFactory(nged::addImGuiItems(nged::defaultGraphItemFactory()));
@@ -199,15 +202,10 @@ class DemoApp: public nged::App
     editor->update(dt.count()/1000.f);
     editor->draw();
     ImGui::PopFont();
-    if (tex && ImGui::Begin("Texture Window")) {
-      ImGui::Image(tex->id(), ImVec2(256, 256));
-    }
-    ImGui::End();
     prev = now;
   }
   void quit()
   {
-    tex = nullptr;
   }
 }; // Demo App
 

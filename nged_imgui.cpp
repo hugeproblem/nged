@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "spdlog/spdlog.h"
 #include "res/fa_icondef.h"
+#include "entry/texture.h"
 
 #include <nlohmann/json.hpp>
 
@@ -324,6 +325,20 @@ void ImGuiResource::reloadFonts()
 // }}} Shared Resource
 
 // Canvas {{{
+class ImGuiImage : public Canvas::Image
+{
+  TexturePtr texture_;
+public:
+  ImGuiImage(TexturePtr texture): texture_(texture) {}
+  ImTextureID id() const { return texture_->id(); }
+};
+
+Canvas::ImagePtr Canvas::createImage(uint8_t const* data, int width, int height)
+{
+  return std::make_shared<ImGuiImage>(
+    uploadTexture(data, width, height));
+}
+
 class ImGuiCanvas : public Canvas
 {
   ImDrawList* drawList_;
@@ -464,6 +479,16 @@ public:
     }
     drawList_->AddText(
       font, fontsize, imvec(textpos+windowOffset_), utils::bswap(style.color), textbegin, textend);
+  }
+  void drawImage(ImagePtr img, Vec2 pmin, Vec2 pmax, Vec2 uvmin, Vec2 uvmax) const override
+  {
+    auto* img_ = static_cast<ImGuiImage*>(img.get());
+    drawList_->AddImage(
+      img_->id(),
+      imvec(canvasToScreen_.transformPoint(pmin)),
+      imvec(canvasToScreen_.transformPoint(pmax)),
+      imvec(uvmin),
+      imvec(uvmax));
   }
 };
 

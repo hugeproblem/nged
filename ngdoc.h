@@ -1410,6 +1410,14 @@ public:
     FontSize          size;
     uint32_t          color;
   };
+
+  class Image
+  {
+  public:
+    virtual ~Image() = default;
+  };
+  using ImagePtr = std::shared_ptr<Image>;
+
   static constexpr TextStyle defaultTextStyle = {
     TextAlign::Left,
     TextVerticalAlign::Center,
@@ -1503,6 +1511,15 @@ public:
     StringView       text,
     TextStyle const& style = defaultTextStyle,
     float            scale = 1.f) const = 0;
+
+  // `data` assumed to be 32-bit RGBA, with 8-bit per channel, and `width` x `height` in size
+  static ImagePtr createImage(uint8_t const* data, int width, int height);
+  // this function is implemented in the-canvas-you-are-going-to-use, e.g. ImGuiCanvas
+  // TODO: maybe we should put it inside a polymorphic Resource class, so that
+  //       we could support more than one type of Canvas at once
+
+  // draws a rect at (pmin to pmax) with given image
+  virtual void drawImage(ImagePtr image, Vec2 pmin, Vec2 pmax, Vec2 uvmin={0,0}, Vec2 uvmax={1,1}) const = 0;
 };
 // }}} Canvas
 
