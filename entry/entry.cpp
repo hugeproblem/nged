@@ -3,30 +3,11 @@
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#else
+#include <iconv.h>
 #endif
 
 namespace nged {
-
-wchar_t const* App::wtitle()
-{
-  // convert ascii to wchar_t
-  char const * ascii = title();
-  static wchar_t *wtitle = nullptr;
-#ifdef _WIN32
-  int len = MultiByteToWideChar(CP_UTF8, 0, ascii, -1, NULL, 0);
-  if (wtitle) delete[] wtitle;
-  wtitle = new wchar_t[len+1];
-  MultiByteToWideChar(CP_UTF8, 0, ascii, -1, wtitle, len);
-#else
-  if (wtitle) delete[] wtitle;
-  size_t n = strlen(ascii);
-  wtitle = new wchar_t[n+1];
-  for(int i=0; i<n; ++i)
-    wtitle[i] = ascii[i];
-  wtitle[n] = 0;
-#endif
-  return wtitle;
-}
 
 void App::init()
 {
@@ -60,6 +41,31 @@ void App::init()
   colors[ImGuiCol_DockingPreview]     = ImVec4(0.61f, 0.61f, 0.61f, 0.70f);
   colors[ImGuiCol_TextSelectedBg]     = ImVec4(1.00f, 1.00f, 1.00f, 0.35f);
   colors[ImGuiCol_NavHighlight]       = ImVec4(0.78f, 0.78f, 0.78f, 1.00f);
+}
+
+std::wstring utf8towstring(std::string_view str)
+{
+  std::wstring wstr;
+#ifdef _WIN32
+  wstr.resize(MultiByteToWideChar(CP_UTF8, 0, str.data(), int(str.size()), nullptr, 0));
+  MultiByteToWideChar(CP_UTF8, 0, str.data(), int(str.size()), wstr.data(), int(wstr.size()));
+#else
+  iconv_t cd = iconv_open("WCHAR_T", "UTF-8");
+  if (cd == (iconv_t)-1)
+    return wstr;
+  size_t inbytesleft = str.size();
+  size_t outbytesleft = inbytesleft * sizeof(wchar_t);
+  wstr.resize(outbytesleft / sizeof(wchar_t));
+  char* inbuf = const_cast<char*>(str.data());
+  char* outbuf = reinterpret_cast<char*>(wstr.data());
+  size_t r = iconv(cd, &inbuf, &inbytesleft, &outbuf, &outbytesleft);
+  iconv_close(cd);
+  if (r == (size_t)-1)
+    wstr.clear();
+  else
+    wstr.resize((outbytesleft / sizeof(wchar_t)) - 1);
+#endif
+  return wstr;
 }
 
 } // namespace nged

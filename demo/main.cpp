@@ -4,7 +4,6 @@
 #include "nged.h"
 #include "nged_imgui.h"
 #include "style.h"
-#include "entry/texture.h"
 
 #include <spdlog/spdlog.h>
 #include "entry/entry.h"
@@ -187,8 +186,7 @@ class DemoApp: public nged::App
     doc->root()->createNode("in");
   }
 
-  char    const* title() { return "Demo"; }
-  wchar_t const* wtitle() { return L"Demo"; }
+  char const* title() { return "Demo"; }
   bool agreeToQuit()
   {
     return editor->agreeToQuit();

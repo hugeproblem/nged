@@ -164,8 +164,7 @@ class DemoApp: public nged::App
     auto root = doc->root();
   }
 
-  char    const* title() { return "Demo"; }
-  wchar_t const* wtitle() { return L"Demo"; }
+  char const* title() { return "Demo"; }
   bool agreeToQuit()
   {
     return editor->agreeToQuit();

@@ -60,8 +60,7 @@ public:
     editor->createNewDocAndDefaultViews();
   }
 
-  char    const* title() { return "S7"; }
-  wchar_t const* wtitle() { return L"S7"; }
+  char const* title() { return "S7"; }
   bool agreeToQuit()
   {
     return editor->agreeToQuit();

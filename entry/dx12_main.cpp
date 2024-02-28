@@ -69,17 +69,17 @@ int startMainLoop()
 {
     ImGui_ImplWin32_EnableDpiAwareness();
 
-    auto* t =
+    auto t =
 #ifdef UNICODE
-    theApp->wtitle();
+    utf8towstring(theApp->title());
 #else
-    theApp->title();
+    std::string(theApp->title());
 #endif
 
     // Create application window
     WNDCLASSEX wc = { sizeof(WNDCLASSEX), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(NULL), NULL, NULL, NULL, NULL, _T("NodeGraphEdWindowFromIIIF"), NULL };
     ::RegisterClassEx(&wc);
-    HWND hwnd = ::CreateWindow(wc.lpszClassName, t, WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
+    HWND hwnd = ::CreateWindow(wc.lpszClassName, t.c_str(), WS_OVERLAPPEDWINDOW, 100, 100, 1280, 800, NULL, NULL, wc.hInstance, NULL);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
