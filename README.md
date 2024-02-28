@@ -8,7 +8,7 @@ Core components of this project are `ngdoc.h` (node graph document) and `nged.h`
 * [visual s7](examples/ngs7/) is lisp visualized in form of node graph, it looks like this:
   ![ngs7](screenshots/Snipaste_s7.png)
 
-* [pydemo](examples/pydemmo/) is a functional python scripting environment, it looks like this:
+* [pydemo](examples/pydemo/) is a functional python scripting environment, it looks like this:
   ![pydemo](screenshots/Snipaste_2023-09-29_00-07-44.png)
 
 What they share in common is the beautiful UI and friendly operations.
