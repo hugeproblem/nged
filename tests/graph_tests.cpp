@@ -1,5 +1,5 @@
 #include <doctest/doctest.h>
-#include <nged.h>
+#include <nged/nged.h>
 
 #include <ostream>
 

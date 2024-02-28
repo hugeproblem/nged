@@ -5,10 +5,10 @@ This is the result of my attempt to make an easy to use, myself-friendly node gr
 
 Core components of this project are `ngdoc.h` (node graph document) and `nged.h` (node graph editor), and with this project comes with two demos, which in hope will give you some basic ideas of what they can do - if you are also looking for a node graph editor that is standalone, customizable, scriptable, efficient, beautiful, ergonomic and cross-platform.
 
-* [visual s7](ngs7/) is lisp visualized in form of node graph, it looks like this:
+* [visual s7](examples/ngs7/) is lisp visualized in form of node graph, it looks like this:
   ![ngs7](screenshots/Snipaste_s7.png)
 
-* [pydemo](pydemmo/) is a functional python scripting environment, it looks like this:
+* [pydemo](examples/pydemmo/) is a functional python scripting environment, it looks like this:
   ![pydemo](screenshots/Snipaste_2023-09-29_00-07-44.png)
 
 What they share in common is the beautiful UI and friendly operations.
@@ -182,7 +182,7 @@ _tips: `xmake project -k compile_commands` can generate `compile_commands.json` 
 
 ## To Make Your Own NodeGraph
 
-Refer to [demo/main.cpp](demo/main.cpp) as the starting point.
+Refer to [examples/demo/main.cpp](examples/demo/main.cpp) as the starting point.
 
 Basically, define your own `NodeFactory`, and off you go.
 

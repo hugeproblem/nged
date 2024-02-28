@@ -153,15 +153,15 @@ target('boxer')
 target('s7')
   set_kind('static')
   add_includedirs('deps/s7', {public=true})
-  add_headerfiles('deps/s7/s7.h', 'ngs7/s7-extensions.h')
-  add_files      ('deps/s7/s7.c', 'ngs7/s7-extensions.cpp')
+  add_headerfiles('deps/s7/s7.h', 'examples/ngs7/s7-extensions.h')
+  add_files      ('deps/s7/s7.c', 'examples/ngs7/s7-extensions.cpp')
   if is_plat('linux') then
     add_links('dl')
   end
 
 target('s7e')
   set_kind('binary')
-  add_files('ngs7/s7e.cpp')
+  add_files('examples/ngs7/s7e.cpp')
   add_deps('s7')
 
 target('miniz')
@@ -172,10 +172,11 @@ target('miniz')
 
 target('ngdoc')
   set_kind('static')
-  add_headerfiles('ngdoc.h')
-  add_files('ngdoc.cpp', 'ngdraw.cpp', 'style.cpp')
+  add_headerfiles('include/nged/ngdoc.h')
+  add_files('src/ngdoc.cpp', 'src/ngdraw.cpp', 'src/style.cpp')
   add_deps('spdlog', 'miniz')
   add_includedirs(
+    'include',
     'deps/nlohmann',
     'deps/spdlog/include',
     'deps/stduuid/include',
@@ -185,11 +186,12 @@ target('ngdoc')
 
 target('nged')
   set_kind('static')
-  add_headerfiles('*.h|ngdoc.h')
-  add_files('nged.cpp', 'nged_imgui.cpp', 'nged_imgui_fonts.cpp')
+  add_headerfiles('include/nged/*.h|ngdoc.h')
+  add_files('src/nged.cpp', 'src/nged_imgui.cpp', 'src/nged_imgui_fonts.cpp')
   add_deps('spdlog', 'nfd', 'imgui', 'boxer', 'ngdoc')
   add_cxflags('/bigobj', {tools='cl'})
   add_includedirs(
+    'include',
     'deps/boxer/include',
     'deps/nlohmann',
     'deps/spdlog/include',
@@ -212,22 +214,23 @@ target('lua')
 target('entry')
   set_kind('static')
   add_deps('imgui')
-  add_files('entry/entry.cpp')
+  add_includedirs('include/nged/entry')
+  add_files('src/entry/entry.cpp')
   if backend=='dx11' then
-    add_files('entry/dx11_main.cpp')
-    add_files('entry/dx11_texture.cpp')
+    add_files('src/entry/dx11_main.cpp')
+    add_files('src/entry/dx11_texture.cpp')
   elseif backend=='dx12' then
-    add_files('entry/dx12_main.cpp')
-    add_files('entry/dx12_texture.cpp')
+    add_files('src/entry/dx12_main.cpp')
+    add_files('src/entry/dx12_texture.cpp')
   elseif backend=='vulkan' then
-    add_files('entry/vulkan_main.cpp')
-    add_files('entry/vulkan_texture.cpp')
+    add_files('src/entry/vulkan_main.cpp')
+    add_files('src/entry/vulkan_texture.cpp')
   elseif backend=='gl2' then
-    add_files('entry/gl2_main.cpp')
-    add_files('entry/gl_texture.cpp')
+    add_files('src/entry/gl2_main.cpp')
+    add_files('src/entry/gl_texture.cpp')
   elseif backend=='gl3' then
-    add_files('entry/gl3_main.cpp')
-    add_files('entry/gl_texture.cpp')
+    add_files('src/entry/gl3_main.cpp')
+    add_files('src/entry/gl_texture.cpp')
   end
   if is_plat('windows') then
     add_links('ws2_32', 'advapi32', 'gdi32', 'shell32', 'version')
@@ -242,22 +245,22 @@ target('entry')
 target('demo')
   set_kind('binary')
   add_deps('nged', 'entry')
-  add_files('demo/main.cpp')
+  add_files('examples/demo/main.cpp')
   add_includedirs('.', 'deps/boxer/include')
 
 target('typed_demo')
   set_kind('binary')
   add_deps('nged', 'entry')
-  add_files('typed_demo/main.cpp')
+  add_files('examples/typed_demo/main.cpp')
   add_includedirs('.', 'deps/boxer/include')
 
 target('ngs7')
   set_kind('binary')
   add_deps('nged', 's7', 'entry')
-  add_files('ngs7/ngs7.cpp', 'ngs7/main.cpp')
+  add_files('examples/ngs7/ngs7.cpp', 'examples/ngs7/main.cpp')
   add_includedirs('deps/imgui/backends')
   if is_plat('windows') then
-    add_files('ngs7/icon.rc')
+    add_files('examples/ngs7/icon.rc')
   end
   add_includedirs('.', 'deps/boxer/include', 'deps/imgui', 'deps/nlohmann', 'deps/spdlog/include', 'deps/subprocess.h')
 
@@ -274,10 +277,10 @@ if get_config('python') and get_config('python')~='no' then
   target('ngpy')
     add_rules('pythonlib')
     set_kind('shared')
-    add_headerfiles('ngpy.h', 'pybind11_imgui.h')
-    add_files('ngpy.cpp', 'pybind11_imgui.cpp')
+    add_headerfiles('include/nged/ngpy.h', 'include/nged/pybind11_imgui.h')
+    add_files('src/ngpy.cpp', 'src/pybind11_imgui.cpp')
     add_deps('nged', 'entry', 'parmscript')
-    add_includedirs('.', 'deps/boxer/include', 'deps/imgui', 'deps/nlohmann', 'deps/spdlog/include', 'deps/parallel_hashmap/parallel_hashmap', 'deps/subprocess.h', 'deps/parmscript')
+    add_includedirs('include', 'deps/boxer/include', 'deps/imgui', 'deps/nlohmann', 'deps/spdlog/include', 'deps/parallel_hashmap/parallel_hashmap', 'deps/subprocess.h', 'deps/parmscript')
     add_includedirs('deps/pybind11/include')
     add_cxflags('/bigobj', {tools='cl'})
 
@@ -287,7 +290,7 @@ if get_config('python') and get_config('python')~='no' then
     if get_config('python') ~= '' then
       add_runenvs('PYTHONPATH', path.directory(get_config('pyextension_fullpath')))
       on_run(function(target)
-        os.run('%s %s', get_config('python'), 'pydemo/main.py')
+        os.run('%s %s', get_config('python'), 'examples/pydemo/main.py')
       end)
     end
 end -- python enabled
