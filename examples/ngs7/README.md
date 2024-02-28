@@ -2,7 +2,7 @@
 
 This is my prove-of-concept lisp editor in node-graph form, and has [s7 scheme](https://ccrma.stanford.edu/software/snd/snd/s7.html) embeded.
 
-![screenshot](../screenshots/Snipaste_s7.png)
+![screenshot](../../screenshots/Snipaste_s7.png)
 
 
 But the editor is not limited to s7, it has only three primitives: `literal`, `()` operator and `quote`, the rules are:
@@ -15,7 +15,7 @@ But the editor is not limited to s7, it has only three primitives: `literal`, `(
 
 example:
 
-![edit](../screenshots/GIF_edit_scheme.gif)
+![edit](../../screenshots/GIF_edit_scheme.gif)
 
 With these rules, other scheme variants may be supported too, it's just an editor anyway.
 
