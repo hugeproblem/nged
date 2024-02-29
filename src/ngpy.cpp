@@ -28,6 +28,7 @@
 #include <pybind11/chrono.h>
 #include <pybind11/complex.h>
 #include <pybind11/functional.h>
+#include <pybind11/numpy.h>
 
 #include <iostream>
 
@@ -869,7 +870,10 @@ PYBIND11_MODULE(nged, m) {
     .def_readwrite("x", &nged::Vec2::x)
     .def_readwrite("y", &nged::Vec2::y)
     .def(py::self+py::self)
+    .def(py::self-py::self)
+    .def(py::self*py::self)
     .def(py::self*float())
+    .def(py::self/float())
     .def("__repr__", [](nged::Vec2 v){return fmt::format("Vec2({}, {})", v.x, v.y);});
   // }}}
   
@@ -1510,6 +1514,27 @@ PYBIND11_MODULE(nged, m) {
       canvas->drawPoly(ptlist.data(), ptlist.size(), closed, style);
     }, py::arg("points"), py::arg("closed") = true, py::arg("style") = pyDefaultShapeStyle)
     .def("drawText", &nged::Canvas::drawText, py::arg("pos"), py::arg("text"), py::arg("style") = pyDefaultTextStyle);
+
+  py::class_<nged::Canvas::Image, nged::Canvas::ImagePtr>(canvas, "Image");
+  canvas
+    .def_static("createImage", [](py::array_t<uint8_t> nparray){
+      auto info = nparray.request();
+      if (info.ndim != 3 || info.shape[2] != 4 || info.format != py::format_descriptor<uint8_t>::format())
+        throw std::runtime_error("createImage: expect 3D buffer of 4 channels of uint8_t");
+      if (info.strides[2] == 4 && info.strides[1] == 4*info.shape[2] && info.strides[0] == 4*info.shape[1]*info.shape[2]) // continuous
+        return nged::Canvas::createImage(static_cast<uint8_t const*>(info.ptr), info.shape[0], info.shape[1]);
+      else {
+        auto pixels = std::make_unique<uint8_t[]>(info.shape[0]*info.shape[1]*info.shape[2]);
+        for (py::ssize_t y = 0; y < info.shape[0]; ++y) {
+          auto src = static_cast<uint8_t const*>(info.ptr) + y*info.strides[0];
+          auto dst = pixels.get() + y*info.shape[1]*info.shape[2];
+          std::copy(src, src+info.shape[1]*info.shape[2], dst);
+        }
+        return nged::Canvas::createImage(pixels.get(), info.shape[0], info.shape[1]);
+      }
+    }, py::arg("nparray_of_rgba"))
+    .def("drawImage", &nged::Canvas::drawImage,
+      py::arg("image"), py::arg("topLeft"), py::arg("bottomRight"), py::arg("uvMin") = nged::Vec2(0,0), py::arg("uvMax") = nged::Vec2(1,1));
   // }}}
 
   // Editor {{{
