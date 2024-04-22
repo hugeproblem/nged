@@ -143,7 +143,7 @@ public:
       duration_(duration),
       age_(0.f)
     { }
-    void updateAndDraw(Canvas* canvas, float dt)
+    void updateAndDraw(Canvas* canvas, float dt) override
     {
       age_ += dt;
       float t = gmath::clamp(age_/duration_, 0.f, 1.f);
@@ -467,6 +467,7 @@ public:
         , hiddenInMenu_(hiddenInMenu)
     {
     }
+    virtual ~Command() {}
 
     auto const& name() const { return name_; }
     auto const& description() const { return description_; }

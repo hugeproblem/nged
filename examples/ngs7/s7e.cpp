@@ -24,7 +24,7 @@ int main(int argc, char** argv)
   }
 
   FILE* inputfile = nullptr;
-  bool const useStdin = strnicmp(argv[1], "--rep", 6) == 0;
+  bool const useStdin = strncmp(argv[1], "--rep", 6) == 0;
 
   if (useStdin)
     inputfile = stdin;

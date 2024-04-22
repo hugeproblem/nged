@@ -946,7 +946,7 @@ public:
     Command("Edit/Colorize", "Colorize Selection ...", "network", Shortcut{'C'}, false)
   {}
   bool hasPrompt() const override { return true; }
-  void onOpenPrompt(GraphView* view)
+  void onOpenPrompt(GraphView* view) override
   {
     assert(view->kind()=="network");
     auto* netview = static_cast<NetworkView*>(view);
@@ -1081,7 +1081,7 @@ public:
       ImGui::PopStyleColor(3);
       ImGui::PopFont();
       if (tooltip && ImGui::IsItemHovered())
-        ImGui::SetTooltip(tooltip);
+        ImGui::SetTooltip("%s", tooltip);
       if (pressed)
         value = !value;
       return pressed;
@@ -1403,8 +1403,18 @@ static DockLayoutNode parseLayoutDescription(std::string_view desc)
     if (name == "hsplit") split='h';
     else if (name == "vsplit") split='v';
     float weight = 1.f;
-    if (parts.size()>1)
-      std::from_chars(&parts[1].front(), &parts[1].back()+1, weight);
+    if (parts.size()>1) {
+      // std::from_chars(&parts[1].front(), &parts[1].back()+1, weight);
+      // macos doesn't support this ↑
+      auto a = &parts[1].front();
+      char* b = nullptr;
+      auto f = std::strtof(a, &b);
+      if (a!=b) {
+        weight = f;
+      }
+      if (b-a != parts[1].size())
+        msghub::warnf("weight of {} has bad floating-point format: {}", parts[0], parts[1]);
+    }
     bool hide_tab_bar = false;
     if (parts.size()>2 && parts[2]=="hide_tab_bar")
       hide_tab_bar = true;
@@ -2518,13 +2528,14 @@ bool HandleShortcut::update(NetworkView* view)
   GraphItemPtr solyLinkableItem = nullptr;
   for (auto id: view->selectedItems())
     if (auto item = view->graph()->get(id))
-      if (item->asNode() && item->asNode()->numOutputs() != 0 || item->asRouter())
+      if (item->asNode() && item->asNode()->numOutputs() != 0 || item->asRouter()) {
         if (solyLinkableItem) { // not the only one
           solyLinkableItem = nullptr;
           break;
         } else {
           solyLinkableItem = item;
         }
+      }
   if (view->hoveringItem() != ID_None && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
     tryEnter(view->hoveringItem());
   } else if (solyLinkableItem && ImGui::IsKeyPressed(ImGuiKey_Enter) && !view->readonly()) {
