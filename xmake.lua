@@ -28,6 +28,16 @@ if is_plat('windows') and (backend=='vulkan' or backend=='gl2' or backend=='gl3'
     add_requires('vcpkg::gl3w')
     add_defines('IMGUI_IMPL_OPENGL_LOADER_GL3W=1')
   end
+elseif is_plat('macosx') then
+  add_defines('IMGUI_IMPL_OPENGL_LOADER_GLEW=1')
+  brew = os.getenv('HOMEBREW_PREFIX')
+  if brew then
+    add_includedirs(path.join(brew, 'include'))
+    add_linkdirs(path.join(brew, 'lib'))
+  end
+  if backend=='gl3' then
+    add_links('GLEW')
+  end
 elseif backend=='gl3' then
   add_defines('IMGUI_IMPL_OPENGL_LOADER_GLEW=1')
   add_links('GLEW')
@@ -110,7 +120,12 @@ target('imgui')
       add_packages('vcpkg::glfw3')
     end
   else
-    add_links('glfw', 'GL', 'dl', 'pthread')
+    add_links('glfw', 'dl', 'pthread')
+    if is_plat('macosx') then
+      add_frameworks('OpenGL')
+    else
+      add_links('GL')
+    end
   end
 
 target('spdlog')
@@ -240,6 +255,8 @@ target('entry')
     if backend=='gl2' or backend=='gl3' then
       add_packages('vcpkg::gl3w')
     end
+  elseif is_plat('macosx') then
+    add_frameworks('AppKit', 'QuartzCore')
   end
 
 target('demo')

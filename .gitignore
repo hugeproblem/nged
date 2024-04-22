@@ -10,6 +10,7 @@ dist/
 *.egg-info/
 python311/site/
 __pycache__/
+.DS_Store
 tags
 compile_commands.json
 settings.lua

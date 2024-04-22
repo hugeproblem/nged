@@ -60,12 +60,12 @@ public:
     editor->createNewDocAndDefaultViews();
   }
 
-  char const* title() { return "S7"; }
-  bool agreeToQuit()
+  char const* title() override { return "S7"; }
+  bool agreeToQuit() override
   {
     return editor->agreeToQuit();
   }
-  void update()
+  void update() override
   {
     static auto prev= std::chrono::system_clock::now();
     auto now = std::chrono::system_clock::now();
@@ -76,7 +76,7 @@ public:
     ImGui::PopFont();
     prev = now;
   }
-  void quit()
+  void quit() override
   {
   }
 

@@ -15,6 +15,32 @@
 #include <algorithm>
 #include <thread>
 
+#if !defined(_WIN32)
+#include <unistd.h>
+#ifdef __APPLE__
+#include <libproc.h>
+
+static std::string abs_path_of_current_process()
+{
+  char pathbuf[PROC_PIDPATHINFO_MAXSIZE] = {0};
+  if (proc_pidpath(getpid(), pathbuf, sizeof(pathbuf)) > 0)
+    return pathbuf;
+  else
+    return "";
+}
+#else // assume to be linux
+// readlink from /proc/self/exe
+static std::string abs_path_of_current_process()
+{
+  char pathbuf[PATH_MAX] = {0};
+  if (readlink("/proc/self/exe", pathbuf, PATH_MAX-1) != -1)
+    return pathbuf;
+  else
+    return "";
+}
+#endif
+#endif
+
 namespace ngs7 {
 
 using namespace nged;
@@ -63,14 +89,25 @@ public:
 
   void evalNewProcess(StringView code, String& output, String& err, String& result)
   {
-    char const* const cmdline[] = {"s7e", "--rep", nullptr};
+    String s7epath = "";
+#ifndef _WIN32
+    String myfullpath = abs_path_of_current_process();
+    auto parts = utils::strsplit(myfullpath, "/");
+    for (int i=0, n=parts.size(); i+1<n; ++i) {
+      s7epath += parts[i];
+      s7epath += '/';
+    }
+#endif
+    s7epath += "s7e";
+
+    char const* const cmdline[] = {s7epath.c_str(), "--rep", nullptr};
     struct subprocess_s proc;
     int ret = -1;
     if (0 != subprocess_create(
           cmdline,
           subprocess_option_search_user_path | subprocess_option_no_window | subprocess_option_enable_async,
           &proc)) {
-      msghub::error("failed to launch process s7e");
+      err = "failed to lanuch process s7e";
       return;
     }
     FILE* proc_stdin = subprocess_stdin(&proc);
@@ -600,13 +637,14 @@ void S7Responser::onInspect(InspectorView* view, GraphItem** items, size_t numIt
   bool  handled  = false;
   Node* solyNode = nullptr;
   for (size_t i = 0; i < numItems; ++i) {
-    if (auto* node = items[i]->asNode())
+    if (auto* node = items[i]->asNode()) {
       if (solyNode) {
         solyNode = nullptr;
         break;
       } else {
         solyNode = node;
       }
+    }
   }
   if (auto* node = solyNode) {
     auto* s7node = static_cast<S7Node*>(node);
@@ -694,7 +732,7 @@ void S7Responser::onItemHovered(NetworkView* view, GraphItem* item)
               pspaces = help.find(lots_of_spaces)) {
               help.replace(pspaces, lots_of_spaces.size(), "\n");
             }
-            ImGui::SetTooltip(help.c_str());
+            ImGui::SetTooltip("%s", help.c_str());
           }
         }
       }

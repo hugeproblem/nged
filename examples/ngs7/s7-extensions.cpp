@@ -329,7 +329,11 @@ static s7_pointer cpp_file_mtime(s7_scheme* sc, s7_pointer args)
   //       in c++20 we will have std::chrono::file_clock::to_sys
   static const auto fstimenow = decltype(mtime)::clock::now();
   static const auto systimenow = std::chrono::system_clock::now();
-  time_t systime = std::chrono::system_clock::to_time_t((mtime-fstimenow)+systimenow);
+  time_t systime = std::chrono::system_clock::to_time_t(
+      systimenow +
+      std::chrono::duration_cast<
+        std::chrono::system_clock::duration>(
+          mtime-fstimenow));
   return(s7_make_integer(sc, systime));
 }
 
