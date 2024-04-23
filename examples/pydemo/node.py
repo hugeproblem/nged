@@ -59,7 +59,7 @@ class DeferredFunctorExecutor(Executor):
     useful for conditional expressions'''
     func: Callable[[Callable[[int], any], int, dict[str, any]], any]
 
-    def __init__(self, nodeid, func: [[Callable[[int], any], int, dict[str, any]], any]):
+    def __init__(self, nodeid, func: Callable[[Callable[[int], any], int, dict[str, any]], any]):
         Executor.__init__(self, nodeid)
         self.func = func
 
