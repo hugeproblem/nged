@@ -12,6 +12,8 @@
 #include <string_view>
 #include <vector>
 
+#include <string.h>
+
 namespace gmath {
 
 static constexpr double pi = 3.1415926535897932384626;

@@ -42,8 +42,8 @@ public:
         pixels[(y*64+x)*4+0] = x*4;
         pixels[(y*64+x)*4+1] = y*4;
         pixels[(y*64+x)*4+2] = rand()&0xff;
-        auto d = gmath::distance(nged::Vec2(x,y), nged::Vec2(32,32));
-        pixels[(y*64+x)*4+3] = uint8_t(gmath::clamp((31-d)/4.f, 0.f, 1.f)*255.f);
+        float d = gmath::distance(nged::Vec2(x,y), nged::Vec2(32,32));
+        pixels[(y*64+x)*4+3] = uint8_t(gmath::clamp((31.f-d)/4.f, 0.f, 1.f)*255.f);
       }
     icon = nged::Canvas::createImage(pixels, 64, 64);
   }
