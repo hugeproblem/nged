@@ -94,7 +94,12 @@ target('imgui')
       add_includedirs(vulkan_sdk..'/Include', {public=true})
       add_linkdirs(vulkan_sdk..'/Lib', {public=true})
     end
-    add_links('glfw3', 'vulkan-1')
+    add_links('glfw3')
+    if is_plat('windows') then
+      add_links('vulkan-1')
+    else
+      add_links('vulkan')
+    end
   elseif backend=='gl2' then
     add_files('deps/imgui/backends/imgui_impl_glfw.cpp', 'deps/imgui/backends/imgui_impl_opengl2.cpp')
   elseif backend=='gl3' then
@@ -245,7 +250,7 @@ target('entry')
       add_packages('vcpkg::gl3w')
     end
   elseif is_plat('macosx') then
-    add_frameworks('AppKit', 'QuartzCore')
+    add_frameworks('AppKit', 'IOKit', 'QuartzCore')
   end
 
 target('demo')
