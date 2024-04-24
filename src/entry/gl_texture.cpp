@@ -36,9 +36,9 @@ TexturePtr uploadTexture(
   GLuint addressFlag = GL_REPEAT;
   GLuint filterFlag = GL_LINEAR;
   if (address == AddressMode::Clamp)
-    addressFlag = GL_CLAMP_TO_EDGE;
+    addressFlag = 0x812F/*GL_CLAMP_TO_EDGE*/;
   else if (address == AddressMode::Border)
-    addressFlag = GL_CLAMP_TO_BORDER;
+    addressFlag = 0x812D/*GL_CLAMP_TO_BORDER*/;
   if (filter == FilterMode::Nearest)
     filterFlag = GL_NEAREST;
 
