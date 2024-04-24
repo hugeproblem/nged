@@ -24,23 +24,12 @@ option_end()
 local backend = get_config('backend')
 if is_plat('windows') and (backend=='vulkan' or backend=='gl2' or backend=='gl3') then
   add_requires('vcpkg::glfw3')
-  if backend=='gl2' or backend=='gl3' then
-    add_requires('vcpkg::gl3w')
-    add_defines('IMGUI_IMPL_OPENGL_LOADER_GL3W=1')
-  end
 elseif is_plat('macosx') then
-  add_defines('IMGUI_IMPL_OPENGL_LOADER_GLEW=1')
   brew = os.getenv('HOMEBREW_PREFIX')
   if brew then
     add_includedirs(path.join(brew, 'include'))
     add_linkdirs(path.join(brew, 'lib'))
   end
-  if backend=='gl3' then
-    add_links('GLEW')
-  end
-elseif backend=='gl3' then
-  add_defines('IMGUI_IMPL_OPENGL_LOADER_GLEW=1')
-  add_links('GLEW')
 end
 if backend=='dx11' then
   add_defines('NGED_BACKEND_DX11')
@@ -203,7 +192,7 @@ target('nged')
   set_kind('static')
   add_headerfiles('include/nged/*.h|ngdoc.h')
   add_files('src/nged.cpp', 'src/nged_imgui.cpp', 'src/nged_imgui_fonts.cpp')
-  add_deps('spdlog', 'nfd', 'imgui', 'boxer', 'ngdoc')
+  add_deps('spdlog', 'nfd', 'imgui', 'boxer', 'ngdoc', 'entry')
   add_cxflags('/bigobj', {tools='cl'})
   add_includedirs(
     'include',
