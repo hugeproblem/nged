@@ -22,7 +22,9 @@ Tested on:
 * Windows 10 x64
 * Windows 11 x64
 * Ubuntu 22 x64
+* Debian 12 (WSL)
 * Raspberry Pi OS Arm
+* MacOS Sonoma (M3 Arm64)
 
 ### Nice looking link paths
 
@@ -129,6 +131,7 @@ With this, it's very easy to customize parameter interface on each node, and it 
   * MSVC 2017
   * MSVC 2019
   * Clang 14
+  * Clang 15
   * GCC 11.4
 * python & setuptools & pip, if you need the python binding and/or the pydemo
 
