@@ -134,7 +134,6 @@ public:
     fwrite(code.data(), 1, code.size(), proc_stdin);
     fputc(0, proc_stdin);
     fflush(proc_stdin);
-    fclose(proc_stdin);
 
     subprocess_join(&proc, &ret);
     if (outReadingThread.joinable())
