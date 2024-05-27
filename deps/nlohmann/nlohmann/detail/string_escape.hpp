@@ -1,17 +1,16 @@
 //     __ _____ _____ _____
 //  __|  |   __|     |   | |  JSON for Modern C++
-// |  |  |__   |  |  | | | |  version 3.10.5
+// |  |  |__   |  |  | | | |  version 3.11.3
 // |_____|_____|_____|_|___|  https://github.com/nlohmann/json
 //
-// SPDX-FileCopyrightText: 2013-2022 Niels Lohmann <https://nlohmann.me>
+// SPDX-FileCopyrightText: 2013-2023 Niels Lohmann <https://nlohmann.me>
 // SPDX-License-Identifier: MIT
 
 #pragma once
 
-#include <nlohmann/detail/macro_scope.hpp>
+#include <nlohmann/detail/abi_macros.hpp>
 
-namespace nlohmann
-{
+NLOHMANN_JSON_NAMESPACE_BEGIN
 namespace detail
 {
 
@@ -69,5 +68,5 @@ static void unescape(StringType& s)
     replace_substring(s, StringType{"~0"}, StringType{"~"});
 }
 
-} // namespace detail
-} // namespace nlohmann
+}  // namespace detail
+NLOHMANN_JSON_NAMESPACE_END
