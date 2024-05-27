@@ -1405,7 +1405,7 @@ static DockLayoutNode parseLayoutDescription(std::string_view desc)
     float weight = 1.f;
     if (parts.size()>1) {
       // std::from_chars(&parts[1].front(), &parts[1].back()+1, weight);
-      // macos doesn't support this ↑
+      // MacOSX doesn't support this ^
       auto a = &parts[1].front();
       char* b = nullptr;
       auto f = std::strtof(a, &b);
