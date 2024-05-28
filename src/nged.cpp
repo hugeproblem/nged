@@ -279,6 +279,8 @@ void NetworkView::zoomToSelected(float time, int order, Vec2 offset)
   using gmath::clamp;
   AABB bb;
   auto graphptr = graph();
+  if (!graphptr)
+    return;
   if (selectedItems_.empty()) {
     if (graphptr->items().empty())
       bb.merge(Vec2{0, 0});
@@ -1209,6 +1211,7 @@ bool NodeGraphEditor::loadDocInto(StringView path, NodeGraphDocPtr dest)
       return false;
     }
   }
+  dest->close();
   if (!filepath.empty() && dest->open(filepath)) {
     for (auto&& view : views_) {
       if (view->doc() == dest) {

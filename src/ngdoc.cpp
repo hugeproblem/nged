@@ -66,7 +66,7 @@ void to_json(nlohmann::json& j, AABB const& aabb)
 // GraphItem {{{
 UID generateUID()
 {
-  static auto mt = std::mt19937();
+  static auto mt = std::mt19937(std::random_device()());
   static uuids::uuid_random_generator generator{mt};
   return generator();
 }
@@ -1821,6 +1821,45 @@ bool Graph::travelBottomUp(
 }
 // }}} Graph
 
+// GraphItemPool {{{
+GraphItemPool::GraphItemPool()
+{
+  auto seed = std::random_device()();
+  randGenerator_ = std::mt19937(seed);
+}
+
+ItemID GraphItemPool::add(GraphItemPtr item)
+{
+  ItemID iid = ID_None;
+  if (!freeList_.empty()) {
+    uint32_t index = freeList_.back();
+    freeList_.pop_back();
+    items_[index] = item;
+    iid = {uint32_t(randGenerator_()), index};
+  } else {
+    size_t id = items_.size();
+    items_.push_back(item);
+    iid = {uint32_t(randGenerator_()), uint32_t(id)};
+  }
+  if (uidMap_.find(item->uid()) != uidMap_.end()) {
+    throw std::runtime_error("got duplicated uid");
+  }
+  uidMap_[item->uid()] = iid;
+  return iid;
+}
+
+void GraphItemPool::moveUID(UID const& oldUID, UID const& newUID)
+{
+  if (auto itr = uidMap_.find(oldUID); itr != uidMap_.end()) {
+    if (uidMap_.find(newUID) != uidMap_.end())
+      throw std::runtime_error("got duplicated uid");
+    auto iid = itr->second;
+    uidMap_.erase(itr);
+    uidMap_[newUID] = iid;
+  }
+}
+// }}} GraphItemPool
+
 // History {{{
 void NodeGraphDocHistory::reset(bool createInitialCommit)
 {
@@ -2011,6 +2050,18 @@ bool NodeGraphDoc::save()
   } else {
     return false;
   }
+}
+
+void NodeGraphDoc::close()
+{
+  pool_.foreach ([](auto itemptr) {
+    if (auto* node = itemptr->asNode()) {
+      if (auto* graph = node->asGraph()) {
+        graph->setRootless();
+      }
+    }
+  });
+  root_.reset();
 }
 
 bool NodeGraphDoc::saveAs(String path)

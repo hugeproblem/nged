@@ -1129,27 +1129,10 @@ class GraphItemPool
 
 public:
   ~GraphItemPool() = default;
-  GraphItemPool() : randGenerator_(std::random_device()()) {}
+  GraphItemPool();
 
   /// insert a new item, return its id
-  ItemID add(GraphItemPtr item)
-  {
-    ItemID iid = ID_None;
-    if (!freeList_.empty()) {
-      uint32_t index = freeList_.back();
-      freeList_.pop_back();
-      items_[index] = item;
-      iid           = {uint32_t(randGenerator_()), index};
-    } else {
-      size_t id = items_.size();
-      items_.push_back(item);
-      iid = {uint32_t(randGenerator_()), uint32_t(id)};
-    }
-    if (uidMap_.find(item->uid()) != uidMap_.end())
-      throw std::runtime_error("got duplicated uid");
-    uidMap_[item->uid()] = iid;
-    return iid;
-  }
+  ItemID add(GraphItemPtr item);
   void release(ItemID id)
   {
     auto index = id.index();
@@ -1178,16 +1161,7 @@ public:
       return get(itr->second);
     return nullptr;
   }
-  void moveUID(UID const& oldUID, UID const& newUID)
-  {
-    if (auto itr = uidMap_.find(oldUID); itr != uidMap_.end()) {
-      auto itemptr = itr->second;
-      uidMap_.erase(itr);
-      if (uidMap_.find(newUID) != uidMap_.end())
-        throw std::runtime_error("got duplicated uid");
-      uidMap_[newUID] = itemptr;
-    }
-  }
+  void moveUID(UID const& oldUID, UID const& newUID);
   template<class F>
   void foreach (F f) const
   {
@@ -1289,10 +1263,13 @@ class NodeGraphDoc : public std::enable_shared_from_this<NodeGraphDoc>
   NodeFactoryPtr          nodeFactory_;
 
   std::function<void(Graph*)> graphModifiedNotifier_;
-
+  
 protected:
   GraphPtr       root_ = nullptr;
   GraphItemPool& itemPool() { return pool_; }
+  NodeGraphDoc(NodeGraphDoc&&) = default;
+  NodeGraphDoc(NodeGraphDoc const&) = delete;
+  NodeGraphDoc& operator=(NodeGraphDoc&&) = default;
 
 public:
   // before loading / saving content into file, do these transforms
@@ -1315,6 +1292,7 @@ public:
   StringView savePath() const { return savePath_; }
   GraphPtr   root() const { return root_; }
   bool       open(String path);
+  void       close();
   bool       save();              /// save to `savePath_`
   bool       saveAs(String path); /// save to `path` and remember `savePath_`
   bool       saveTo(String path); /// save to `path` without rembering `savePath_`
