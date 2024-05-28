@@ -1471,19 +1471,29 @@ bool Graph::deserialize(Json const& json)
     OutputConnection outcon = {idmap.at(to["id"]), sint(to["port"])};
     newlinks.insert(outcon);
     auto linkitr = links_.find(outcon);
-    if (linkitr != links_.end() && linkitr->second == incon)
-      continue;
-    if (!setLink(incon.sourceItem, incon.sourcePort, outcon.destItem, outcon.destPort)) {
-      msghub::errorf("failed to deserialize link {}", linkdata.dump(2));
-      return false;
+    if (linkitr != links_.end()) {
+      if (linkitr->second == incon)
+        continue;
+      else
+        msghub::errorf(
+          "link from {}({}) to {}({}) has already been set",
+          incon.sourceItem.value(), incon.sourcePort,
+          outcon.destItem.value(), outcon.destPort);
     }
+
+    links_[outcon] = incon;
+    auto linkptr = std::make_shared<Link>(this, incon, outcon);
+    linkIDs_[outcon] = add(linkptr);
   }
   HashSet<OutputConnection> redundantLinks;
   for (auto&& pair : links_)
     if (newlinks.find(pair.first) == newlinks.end())
       redundantLinks.insert(pair.first);
-  for (auto&& outcon : redundantLinks)
-    removeLink(outcon.destItem, outcon.destPort);
+  if (!redundantLinks.empty()) {
+    msghub::error("have redundant link");
+  }
+  // for (auto&& outcon : redundantLinks)
+  //  removeLink(outcon.destItem, outcon.destPort);
 
   for (auto id : items_) {
     if (auto* group = get(id)->asGroupBox())
@@ -1929,6 +1939,8 @@ bool NodeGraphDocHistory::checkout(size_t version)
   if (result != MZ_OK)
     throw std::runtime_error("failed to decompress history data");
   Json json    = Json::parse(uncompressedData);
+  doc_->close();
+  doc_->makeRoot();
   bool succeed = doc_->root()->deserialize(json);
   --atEditGroupLevel_;
 
@@ -2054,13 +2066,6 @@ bool NodeGraphDoc::save()
 
 void NodeGraphDoc::close()
 {
-  pool_.foreach ([](auto itemptr) {
-    if (auto* node = itemptr->asNode()) {
-      if (auto* graph = node->asGraph()) {
-        graph->setRootless();
-      }
-    }
-  });
   root_.reset();
 }
 
