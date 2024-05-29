@@ -1860,6 +1860,8 @@ ItemID GraphItemPool::add(GraphItemPtr item)
 
 void GraphItemPool::moveUID(UID const& oldUID, UID const& newUID)
 {
+  if (oldUID == newUID)
+    return;
   if (auto itr = uidMap_.find(oldUID); itr != uidMap_.end()) {
     if (uidMap_.find(newUID) != uidMap_.end())
       throw std::runtime_error("got duplicated uid");
@@ -1939,8 +1941,6 @@ bool NodeGraphDocHistory::checkout(size_t version)
   if (result != MZ_OK)
     throw std::runtime_error("failed to decompress history data");
   Json json    = Json::parse(uncompressedData);
-  doc_->close();
-  doc_->makeRoot();
   bool succeed = doc_->root()->deserialize(json);
   --atEditGroupLevel_;
 
