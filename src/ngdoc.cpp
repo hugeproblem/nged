@@ -66,7 +66,7 @@ void to_json(nlohmann::json& j, AABB const& aabb)
 // GraphItem {{{
 UID generateUID()
 {
-  static auto mt = std::mt19937();
+  static auto mt = std::mt19937(std::random_device()());
   static uuids::uuid_random_generator generator{mt};
   return generator();
 }
@@ -1471,19 +1471,29 @@ bool Graph::deserialize(Json const& json)
     OutputConnection outcon = {idmap.at(to["id"]), sint(to["port"])};
     newlinks.insert(outcon);
     auto linkitr = links_.find(outcon);
-    if (linkitr != links_.end() && linkitr->second == incon)
-      continue;
-    if (!setLink(incon.sourceItem, incon.sourcePort, outcon.destItem, outcon.destPort)) {
-      msghub::errorf("failed to deserialize link {}", linkdata.dump(2));
-      return false;
+    if (linkitr != links_.end()) {
+      if (linkitr->second == incon)
+        continue;
+      else
+        msghub::errorf(
+          "link from {}({}) to {}({}) has already been set",
+          incon.sourceItem.value(), incon.sourcePort,
+          outcon.destItem.value(), outcon.destPort);
     }
+
+    links_[outcon] = incon;
+    auto linkptr = std::make_shared<Link>(this, incon, outcon);
+    linkIDs_[outcon] = add(linkptr);
   }
   HashSet<OutputConnection> redundantLinks;
   for (auto&& pair : links_)
     if (newlinks.find(pair.first) == newlinks.end())
       redundantLinks.insert(pair.first);
-  for (auto&& outcon : redundantLinks)
-    removeLink(outcon.destItem, outcon.destPort);
+  if (!redundantLinks.empty()) {
+    msghub::error("have redundant link");
+  }
+  // for (auto&& outcon : redundantLinks)
+  //  removeLink(outcon.destItem, outcon.destPort);
 
   for (auto id : items_) {
     if (auto* group = get(id)->asGroupBox())
@@ -1821,6 +1831,47 @@ bool Graph::travelBottomUp(
 }
 // }}} Graph
 
+// GraphItemPool {{{
+GraphItemPool::GraphItemPool()
+{
+  auto seed = std::random_device()();
+  randGenerator_ = std::mt19937(seed);
+}
+
+ItemID GraphItemPool::add(GraphItemPtr item)
+{
+  ItemID iid = ID_None;
+  if (!freeList_.empty()) {
+    uint32_t index = freeList_.back();
+    freeList_.pop_back();
+    items_[index] = item;
+    iid = {uint32_t(randGenerator_()), index};
+  } else {
+    size_t id = items_.size();
+    items_.push_back(item);
+    iid = {uint32_t(randGenerator_()), uint32_t(id)};
+  }
+  if (uidMap_.find(item->uid()) != uidMap_.end()) {
+    throw std::runtime_error("got duplicated uid");
+  }
+  uidMap_[item->uid()] = iid;
+  return iid;
+}
+
+void GraphItemPool::moveUID(UID const& oldUID, UID const& newUID)
+{
+  if (oldUID == newUID)
+    return;
+  if (auto itr = uidMap_.find(oldUID); itr != uidMap_.end()) {
+    if (uidMap_.find(newUID) != uidMap_.end())
+      throw std::runtime_error("got duplicated uid");
+    auto iid = itr->second;
+    uidMap_.erase(itr);
+    uidMap_[newUID] = iid;
+  }
+}
+// }}} GraphItemPool
+
 // History {{{
 void NodeGraphDocHistory::reset(bool createInitialCommit)
 {
@@ -2011,6 +2062,11 @@ bool NodeGraphDoc::save()
   } else {
     return false;
   }
+}
+
+void NodeGraphDoc::close()
+{
+  root_.reset();
 }
 
 bool NodeGraphDoc::saveAs(String path)
