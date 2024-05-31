@@ -18,6 +18,10 @@
 #include <limits>
 #include <memory>
 
+static constexpr char licenses_json[] =
+#include "res/licenses.inl"
+;
+
 // string format support {{{
 template<>
 struct fmt::formatter<gmath::Vec2>
@@ -1201,9 +1205,14 @@ public:
 // Help View {{{
 class ImGuiHelpView : public ImGuiGraphView<ImGuiHelpView, GraphView>
 {
+  HashMap<String, String> licenses_;
 public:
   ImGuiHelpView(NodeGraphEditor* editor) : ImGuiGraphView(editor, nullptr) {
     setTitle("Help");
+    auto js = Json::parse(licenses_json);
+    for (auto& [key, val] : js.items()) {
+      licenses_[key] = val;
+    }
   }
   void onDocModified() override {}
   void onGraphModified() override {}
@@ -1226,9 +1235,17 @@ public:
         ImGui::TextUnformatted("Presented to you by iiif.");
         ImGui::TextUnformatted("");
         ImGui::TextUnformatted("With great help of following open source libraries:");
-        Vector<String> libs = {"boxer", "doctest", "imgui", "lua", "miniz", "nativefiledialog", "nlohmann json", "parallel_hashmap", "parmscript", "pybind11", "python", "sol2", "spdlog", "subprocess.h", "uuid_v4"};
+        Vector<String> libs = {"boxer", "doctest", "imgui", "lua", "miniz", "nativefiledialog", "nlohmann json", "parallel_hashmap", "parmscript", "pybind11", "python", "sol2", "spdlog", "subprocess.h", "stduuid"};
         for (auto&& lib: libs) {
-          ImGui::BulletText("%s", lib.c_str());
+          if (ImGui::CollapsingHeader(lib.c_str())) {
+            if (auto itr = licenses_.find(lib); itr != licenses_.end()) {
+              ImGui::Indent(16);
+              ImGui::PushFont(ImGuiResource::instance().monoFont);
+              ImGui::TextUnformatted(itr->second.c_str());
+              ImGui::PopFont();
+              ImGui::Unindent(16);
+            }
+          }
         }
         ImGui::EndTabItem();
       }
