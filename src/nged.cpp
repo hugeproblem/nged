@@ -1294,8 +1294,8 @@ bool NodeGraphEditor::saveDocAs(DocPtr doc, StringView inputpath)
 
 void NodeGraphEditor::update(float dt)
 {
-  for (auto& view : pendingAddViews_)
-    views_.insert(std::move(view));
+  for (auto&& view : pendingAddViews_)
+    views_.insert(view);
   pendingAddViews_.clear();
   for (auto view : pendingRemoveViews_) {
     auto doc = view->doc();
