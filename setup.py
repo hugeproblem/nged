@@ -38,8 +38,11 @@ class XMakeBuild(build_ext):
         ])
         subprocess.run(['xmake', 'build', ext.xmake_target])
 
-    def get_outputs(self) -> list[str]:
-        return []
+        # generate stubs
+        sodir = os.path.dirname(os.path.abspath(self.get_ext_fullpath(ext.name)))
+        stubdir = os.path.abspath('build/nged-stubs')
+        print(f'generate stubs into {stubdir}')
+        subprocess.run([sys.executable, '-m', 'pybind11_stubgen', '-o', stubdir, '--ignore-invalid-expressions', '.*', '--ignore-unresolved-names', '.*', 'nged'], cwd=sodir)
 
 setup(
     name = 'nged',
@@ -49,4 +52,16 @@ setup(
     ext_modules = [XMakeExtension('nged', 'ngpy')],
     cmdclass = {'build_ext': XMakeBuild},
     zip_safe = False,
-    python_requires='>=3.0')
+    python_requires='>=3.0',
+    setup_requires=['pybind11-stubgen'],
+    packages = ['nged', 'nged-stubs'],
+    package_dir= {
+        'nged': 'build',
+        'nged-stubs': 'build/nged-stubs/nged'
+    },
+    package_data = {
+        'nged': ['*.pyd'],
+        'nged-stubs': ['*.pyi']
+    },
+    include_package_data = True
+)
