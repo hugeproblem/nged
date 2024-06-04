@@ -1126,6 +1126,7 @@ class GraphItemPool
   std::mt19937         randGenerator_;
 
   GraphItemPool(GraphItemPool const&) = delete;
+  GraphItemPool(GraphItemPool&&) = delete;
 
 public:
   ~GraphItemPool() = default;
@@ -1215,6 +1216,7 @@ class NodeGraphDocHistory
 public:
   NodeGraphDocHistory(NodeGraphDoc* doc) : doc_(doc) { reset(false); }
   NodeGraphDocHistory(NodeGraphDocHistory const&) = delete;
+  NodeGraphDocHistory(NodeGraphDocHistory&&) = delete;
 
 public:
   ~NodeGraphDocHistory() = default;
@@ -1267,9 +1269,9 @@ class NodeGraphDoc : public std::enable_shared_from_this<NodeGraphDoc>
 protected:
   GraphPtr       root_ = nullptr;
   GraphItemPool& itemPool() { return pool_; }
-  NodeGraphDoc(NodeGraphDoc&&) = default;
+  NodeGraphDoc(NodeGraphDoc&&) = delete;
   NodeGraphDoc(NodeGraphDoc const&) = delete;
-  NodeGraphDoc& operator=(NodeGraphDoc&&) = default;
+  NodeGraphDoc& operator=(NodeGraphDoc&&) = delete;
 
 public:
   // before loading / saving content into file, do these transforms

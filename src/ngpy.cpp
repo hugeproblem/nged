@@ -55,7 +55,7 @@ nged::GraphItemPtr PyGraphItemFactory::make(nged::Graph* parent, nged::String co
   if (auto itr = pyFactories_.find(name); itr != pyFactories_.end()) {
     pybind11::gil_scoped_acquire gil;
     try {
-      auto pyobj = itr->second.call(parent);
+      auto pyobj = itr->second(parent);
       if (auto itemptr = py::cast<nged::GraphItemPtr>(pyobj)) {
         if (auto* pyitem = dynamic_cast<PyGraphItem*>(itemptr.get())) {
           pyitem->factory_ = -9;
@@ -68,7 +68,7 @@ nged::GraphItemPtr PyGraphItemFactory::make(nged::Graph* parent, nged::String co
           return itemptr;
         }
       } else {
-        throw py::type_error(std::string("expected nged::GraphItem being returned by ") + std::string(itr->second.str()));
+        throw py::type_error(std::string("expected nged::GraphItem being returned by ") + std::string(pybind11::str(itr->second)));
       }
     } catch (std::exception const& e) {
       msghub::errorf("failed to create item {}: {}", name, e.what());
@@ -110,7 +110,7 @@ void PyGraphItemFactory::discard(nged::Graph* graph, nged::GraphItem* item) cons
       return;
     assert(dynamic_cast<PyNodeGraphDoc*>(graph->docRoot()));
     if (auto* pydoc = static_cast<PyNodeGraphDoc*>(graph->docRoot()))
-      pydoc->pyObjects.erase(py::object(pyhandle, true));
+      pydoc->pyObjects.erase(py::reinterpret_borrow<py::object>(pyhandle));
   }
 }
 // }}}
@@ -229,7 +229,7 @@ size_t PyNode::getExtraDependencies(nged::Vector<nged::ItemID>& deps)
     auto pyGetExtraDeps = pybind11::get_override(this, "getExtraDependencies");
     if (pyGetExtraDeps) {
       auto result = pyGetExtraDeps();
-      if (result && result != py::none())
+      if (result && !result.is(py::none()))
         for (auto&& obj: result)
           deps.push_back(pybind11::cast<nged::ItemID>(obj));
     }
@@ -361,7 +361,7 @@ void PyNodeFactory::discard(nged::Graph* graph, nged::Node* node) const
       return;
     assert(dynamic_cast<PyNodeGraphDoc*>(graph->docRoot()));
     if (auto* pydoc = static_cast<PyNodeGraphDoc*>(graph->docRoot()))
-      pydoc->pyObjects.erase(py::object(pyhandle, true));
+      pydoc->pyObjects.erase(py::reinterpret_borrow<py::object>(pyhandle));
   }
 }
 // }}}
@@ -389,7 +389,7 @@ PyImGuiNodeGraphEditor::PyImGuiNodeGraphEditor(py::object docFactory, py::object
     if (!pydoc) return nullptr;
     auto docptr = py::cast<nged::NodeGraphDocPtr>(pydoc);
     if (!docptr) {
-      throw py::type_error(std::string("expected Document being returned by ") + std::string(pyDocFactory.str()));
+      throw py::type_error(std::string("expected Document being returned by ") + std::string(py::str(pyDocFactory)));
       return nullptr;
     }
     pyDocs.insert(pydoc);
@@ -418,7 +418,7 @@ PyImGuiNodeGraphEditor::~PyImGuiNodeGraphEditor()
 
 void PyImGuiNodeGraphEditor::beforeDocRemoved(DocPtr doc)
 {
-  py::object pyobj(py::detail::get_object_handle(doc.get(), py::detail::get_type_info(typeid(PyNodeGraphDoc))), true);
+  auto pyobj = py::reinterpret_borrow<py::object>(py::detail::get_object_handle(doc.get(), py::detail::get_type_info(typeid(PyNodeGraphDoc))));
   if (auto itr = pyDocs.find(pyobj); itr != pyDocs.end()) {
     msghub::infof("{} was removed", doc->title());
     pyDocs.erase(pyobj);
@@ -471,13 +471,14 @@ void PyResponser::onInspect(nged::InspectorView* view, nged::GraphItem** items, 
   bool  handled  = false;
   nged::Node* solyNode = nullptr;
   for (size_t i = 0; i < count; ++i) {
-    if (auto* node = items[i]->asNode())
+    if (auto* node = items[i]->asNode()) {
       if (solyNode) {
         solyNode = nullptr;
         break;
       } else {
         solyNode = node;
       }
+    }
   }
   if (auto* node = solyNode) {
     auto* pynode = static_cast<PyNode*>(node);
@@ -802,7 +803,7 @@ void PyResponser::afterViewRemoved(nged::GraphView* view)
   {
     assert(dynamic_cast<PyImGuiNodeGraphEditor*>(editor));
     auto* pyeditor = static_cast<PyImGuiNodeGraphEditor*>(editor);
-    pyeditor->pyViews.erase(py::object(pyview, true));
+    pyeditor->pyViews.erase(py::reinterpret_borrow<py::object>(pyview));
   }
 }
 // }}}
@@ -1406,7 +1407,7 @@ PYBIND11_MODULE(nged, m) {
       for (auto item: items) {
         auto* itemptr = py::cast<nged::GraphItem*>(item);
         if (!itemptr) {
-          msghub::warnf("{} is not a GraphItem", std::string(item.str()));
+          msghub::warnf("{} is not a GraphItem", std::string(py::str(item)));
           continue;
         }
         ids.insert(itemptr->id());
