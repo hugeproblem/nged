@@ -69,7 +69,7 @@ local loadParmScript=function(parmscript)
   local defineNonField=function(ui)
     return function(label)
       local fullname=fullpath('ui_'..ui)
-      local field={name='ui_only', path=fullname, parent=currentbranch, type=nil, ui=ui}
+      local field={name='ui_only', path=fullname, parent=currentbranch, type='', ui=ui}
       table.insert(currentbranch.fields, field)
       field.meta = {label = label}
       return function(meta)
@@ -83,7 +83,7 @@ local loadParmScript=function(parmscript)
     return function(name)
       assert(not string.find(name,'[^%w_]'), fmt("name should contain letters, digits and underscores only, got \"%s\".", name))
       local fullname=fullpath(name)
-      local field={name=name, path=fullname, parent=currentbranch, type=t, ui=ui}
+      local field={name=name, path=fullname, parent=currentbranch, type=t, ui=ui, meta={}}
       table.insert(currentbranch.fields, field)
       if t and t~='' then
         assert(not parmlut[fullname], fmt('%q already exist', fullname))
