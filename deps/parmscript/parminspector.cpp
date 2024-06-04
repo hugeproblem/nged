@@ -307,6 +307,9 @@ FieldInspector ParmSetInspector::getFieldInspector(Parm const& parm)
       return stringFieldInspector;
     case value_type_enum::COLOR:
       return colorFieldInspector;
+    case value_type_enum::NONE:
+    default:
+      break;
   }
   return [](Parm& parm)->bool {
     WARN("dow\'t know how to inspect parm \"%s\"\n", parm.path().c_str());

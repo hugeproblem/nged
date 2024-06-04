@@ -23,10 +23,9 @@ class XMakeBuild(build_ext):
             pylib = f'python{sysconfig.get_config_var("py_version_nodot")}'
         else:
             pylib = f'python{sysconfig.get_config_var("py_version_short")}'
-        #print(f'expected output path: {self.get_ext_fullpath(ext.name)}')
-        #print(f'includedirs={self.include_dirs}')
-        #print(f'libdirs={self.library_dirs}')
-        #print(f'lib={pylib}')
+        libdirs = self.library_dirs
+        libdirs.extend(sysconfig.get_config_var('LIBDIR').split(os.path.pathsep))
+        libdirs = set(libdirs)
         subprocess.run([
             'xmake', 'config',
             f'--python={sys.executable}',

@@ -1,11 +1,12 @@
 #pragma once
-
+#pragma once
 #include "ngdoc.h"
 #include "nged.h"
 #include "nged_imgui.h"
 #include "entry/entry.h"
 #include "parmscript.h"
 #include "parminspector.h"
+#include "nlohmann/json.hpp"
 #include <pybind11/pybind11.h>
 
 #include <map>
@@ -74,7 +75,7 @@ public:
         auto pystr = pyserialize();
         if (pystr.is_none())
           return false;
-        json["pydata"] = pystr.cast<std::string>();
+        json["pydata"] = pystr.template cast<std::string>();
       }
       return true;
     } catch (std::exception const& e) {
@@ -375,7 +376,7 @@ public:
       pyhandle = pybind11::detail::get_object_handle(
         item.get(), pybind11::detail::get_type_info(typeid(PyGraphItem)));
     if (pyhandle) {
-      pybind11::object pyobj(pyhandle, true);
+      auto pyobj = pybind11::reinterpret_borrow<pybind11::object>(pyhandle);
       pyObjects.insert(std::move(pyobj));
     }
     return nged::NodeGraphDoc::addItem(item);
@@ -394,7 +395,7 @@ public:
       pyhandle = pybind11::detail::get_object_handle(
         item.get(), pybind11::detail::get_type_info(typeid(PyGraphItem)));
     if (pyhandle) {
-      pybind11::object pyobj(pyhandle, true);
+      auto pyobj = pybind11::reinterpret_borrow<pybind11::object>(pyhandle);
       assert(pyObjects.find(pyobj) != pyObjects.end());
       pyObjects.erase(pyobj);
     }
@@ -435,11 +436,11 @@ public:
   {
     PYBIND11_OVERLOAD(bool, nged::CommandManager::Command, hasPrompt);
   }
-  virtual void onOpenPrompt(nged::GraphView* view)
+  virtual void onOpenPrompt(nged::GraphView* view) override
   {
     PYBIND11_OVERLOAD(void, nged::CommandManager::Command, onOpenPrompt, view);
   }
-  virtual bool onUpdatePrompt(nged::GraphView* view)
+  virtual bool onUpdatePrompt(nged::GraphView* view) override
   {
     PYBIND11_OVERLOAD(bool, nged::CommandManager::Command, onUpdatePrompt, view);
   }

@@ -72,7 +72,11 @@ on_config(function(target)
       target:add('linkdirs', p)
     end
   end
-  target:add('links', get_config('pylib'))
+  if is_plat('macosx') then
+    target:add('shflags', '-undefined dynamic_lookup', {force=true})
+  else
+    target:add('links', get_config('pylib'))
+  end
 end)
 rule_end()
 
@@ -249,7 +253,11 @@ target('entry')
     if backend=='gl2' or backend=='gl3' then
       add_packages('vcpkg::gl3w')
     end
-  elseif is_plat('macosx') then
+  else
+    add_links('iconv')
+  end
+
+  if is_plat('macosx') then
     add_frameworks('AppKit', 'IOKit', 'QuartzCore')
   end
 

@@ -233,37 +233,13 @@ public:
 
   // set values:
   template <class T>
-  bool set(T value) {
-    if constexpr (std::is_same_v<T, int>) {
-      if (ui_type_ == ui_type_enum::MENU) {
-        if (menu_values_.size() == menu_items_.size()) {
-          auto itr = std::find(menu_values_.begin(), menu_values_.end(), value);
-          if (itr == menu_values_.end())
-            value_ = 0;
-          else
-            value_ = int(itr - menu_values_.begin());
-        } else {
-          value_ = value;
-        }
-      } else {
-        value_ = value;
-      }
-    } else if (auto* ptr = std::get_if<T>(&value_)) {
-      root_->dirtyEntries_.insert(path());
-      *ptr = std::move(value);
-      return true;
-    }
-    return false;
-  }
+  inline bool set(T value);
 
   // set list:
   void resizeList(size_t cnt);
 
   template <class T>
-  bool setListValue(size_t i, size_t f, T value) {
-    root_->dirtyEntries_.insert(path());
-    return listValues_.at(i)->fields_.at(f)->set(std::move(value));
-  }
+  inline bool setListValue(size_t i, size_t f, T value);
 
   template <class T>
   T getMeta(std::string const& key, T const& defaultval) const
@@ -272,7 +248,7 @@ public:
       if (std::holds_alternative<T>(itr->second)) {
         return std::get<T>(itr->second);
       } else {
-        fprintf(stderr, "bad type held in %s: %z\n", key.c_str(), itr->second.index());
+        fprintf(stderr, "bad type held in %s: %zu\n", key.c_str(), itr->second.index());
       }
     }
     return defaultval;
@@ -414,6 +390,38 @@ public:
   auto operator[](string const& key) { return get(key); }
   auto operator[](string const& key) const { return get(key); }
 };
+
+template <class T>
+inline bool Parm::set(T value)
+{
+  if constexpr (std::is_same_v<T, int>) {
+    if (ui_type_ == ui_type_enum::MENU) {
+      if (menu_values_.size() == menu_items_.size()) {
+        auto itr = std::find(menu_values_.begin(), menu_values_.end(), value);
+        if (itr == menu_values_.end())
+          value_ = 0;
+        else
+          value_ = int(itr - menu_values_.begin());
+      } else {
+        value_ = value;
+      }
+    } else {
+      value_ = value;
+    }
+  } else if (auto* ptr = std::get_if<T>(&value_)) {
+    root_->dirtyEntries_.insert(path());
+    *ptr = std::move(value);
+    return true;
+  }
+  return false;
+}
+
+template <class T>
+inline bool Parm::setListValue(size_t i, size_t f, T value)
+{
+  root_->dirtyEntries_.insert(path());
+  return listValues_.at(i)->fields_.at(f)->set(std::move(value));
+}
 
 } // namespace parmscript
 
