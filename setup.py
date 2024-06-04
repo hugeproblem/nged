@@ -24,7 +24,8 @@ class XMakeBuild(build_ext):
         else:
             pylib = f'python{sysconfig.get_config_var("py_version_short")}'
         libdirs = self.library_dirs
-        libdirs.extend(sysconfig.get_config_var('LIBDIR').split(os.path.pathsep))
+        if conf_libdir := sysconfig.get_config_var('LIBDIR'):
+            libdirs.extend(conf_libdir.split(os.path.pathsep))
         libdirs = set(libdirs)
         subprocess.run([
             'xmake', 'config',
