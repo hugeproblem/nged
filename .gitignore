@@ -4,6 +4,7 @@ build/
 .xmake/
 .cache/
 .vscode/
+.eggs/
 vs20??/
 vsxmake*/
 dist/

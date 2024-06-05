@@ -7,6 +7,11 @@ from pathlib import Path
 from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 
+stubdir = os.path.abspath('build/nged-stubs')
+nged_stubs = os.path.join(stubdir, 'nged')
+if not os.path.exists(nged_stubs):
+    os.makedirs(nged_stubs)
+
 class XMakeExtension(Extension):
     def __init__(self, name: str, xmake_target: str = ''):
         super().__init__(name, sources=[])
@@ -40,7 +45,6 @@ class XMakeBuild(build_ext):
 
         # generate stubs
         sodir = os.path.dirname(os.path.abspath(self.get_ext_fullpath(ext.name)))
-        stubdir = os.path.abspath('build/nged-stubs')
         print(f'generate stubs into {stubdir}')
         subprocess.run([sys.executable, '-m', 'pybind11_stubgen', '-o', stubdir, '--ignore-invalid-expressions', '.*', '--ignore-unresolved-names', '.*', 'nged'], cwd=sodir)
 
