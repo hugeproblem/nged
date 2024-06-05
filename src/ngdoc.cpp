@@ -1128,16 +1128,6 @@ LinkPtr Graph::setLink(ItemID sourceItem, sint sourcePort, ItemID destItem, sint
         ptr->calculatePath();
       }
     }
-    if (auto* dstdye = dstitem->asDyeable()) {
-      if (auto* srcdye = srcitem->asDyeable())
-        dstdye->setColor(srcdye->color());
-    }
-    if (dstrouter) {
-      if (srcnodeptr)
-        dstrouter->setLinkColor(srcnodeptr->outputPinColor(sourcePort));
-      else if (srcrouter)
-        dstrouter->setLinkColor(srcrouter->linkColor());
-    }
     doc->notifyGraphModified(this);
     return linkptr;
   }

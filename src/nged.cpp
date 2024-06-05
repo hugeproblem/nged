@@ -1547,6 +1547,19 @@ bool NodeGraphEditor::setLink(Graph* graph, NetworkView* fromView, ItemID source
   if (auto linkptr = graph->setLink(sourceItem, sourcePort, destItem, destPort)) {
     if (responser_)
       responser_->onLinkSet(linkptr.get());
+    auto srcItemPtr = graph->get(sourceItem);
+    auto dstItemPtr = graph->get(destItem);
+    if (auto* dstDye = dstItemPtr->asDyeable()) {
+      if (auto* srcDye = srcItemPtr->asDyeable()) {
+        dstDye->setColor(srcDye->color());
+      }
+    }
+    if (auto* dstRouter = dstItemPtr->asRouter()) {
+      if (auto* srcNodePtr = srcItemPtr->asNode())
+        dstRouter->setLinkColor(srcNodePtr->outputPinColor(sourcePort));
+      else if (auto* srcRouter = srcItemPtr->asRouter())
+        dstRouter->setLinkColor(srcRouter->linkColor());
+    }
     anythingDone = true;
   }
   if (anythingDone)
