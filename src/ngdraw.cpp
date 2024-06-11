@@ -41,6 +41,14 @@ void Node::draw(Canvas* canvas, GraphItemState state) const
     hlcolor = {64, 64, 64, 255};
   }
 
+  if (flags_ & NODEFLAG_BYPASS) {
+    style.strokeColor = style.fillColor;
+    style.strokeWidth = 1.f;
+    Color c = color_;
+    c.a *= 0.33f;
+    style.fillColor = gmath::toUint32RGBA(c);
+  }
+
   // the node
   float const limit = 0.2f;
   if (canvas->viewScale() < limit) {

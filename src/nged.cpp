@@ -1168,6 +1168,65 @@ void NodeGraphEditor::initCommands()
     Shortcut{},
     "network"}).setMayModifyGraph(false);
 #endif
+
+  // context menu
+  auto menus = std::make_shared<ContextMenuEntries>();
+  menus->push_back({
+    [](GraphView const* view){
+      if (view->kind() != "network") return false;
+      auto* nv = static_cast<NetworkView const*>(view);
+      if (nv->hoveringItem() != ID_None) {
+        if (auto item = nv->graph()->get(nv->hoveringItem())) {
+          if (auto* node = item->asNode())
+            if (node->isFlagApplicatable(node->flags() ^ NODEFLAG_BYPASS))
+              return true;
+        }
+      }
+      return false;
+    },
+    [](GraphView* view) {
+      bool anythingDone = false;
+      auto* nv = static_cast<NetworkView*>(view);
+      if (nv->selectedItems().find(nv->hoveringItem()) != nv->selectedItems().end()) {
+        bool bypassed = true;
+        Vector<Node*> nodes;
+        for (auto id: nv->selectedItems()) {
+          if (auto item = nv->graph()->get(id)) {
+            if (auto* node = item->asNode()) {
+              if (!node->isFlagApplicatable(NODEFLAG_BYPASS))
+                continue;
+              bypassed &= node->flags() & NODEFLAG_BYPASS;
+              nodes.push_back(node);
+            }
+          }
+        }
+        for (auto* node: nodes) {
+          uint64_t flags = 0;
+          if (bypassed)
+            flags = node->flags() & ~NODEFLAG_BYPASS;
+          else
+            flags = node->flags() | NODEFLAG_BYPASS;
+          if (!node->isFlagApplicatable(flags))
+            continue;
+          anythingDone = true;
+          node->setFlags(flags);
+        }
+      } else if (auto item = nv->graph()->get(nv->hoveringItem())) {
+        if (auto* node = item->asNode()) {
+          uint64_t flags = node->flags() ^ NODEFLAG_BYPASS;
+          if (node->isFlagApplicatable(flags)) {
+            node->setFlags(flags);
+            anythingDone = true;
+          }
+        }
+      }
+
+      if (anythingDone)
+        view->graph()->docRoot()->history().commit("Toggle bypass");
+    },
+    "Toggle Bypass"
+  });
+  setContextMenus(menus);
   // clang-format on
 }
 // }}} Builtin Commands
@@ -1547,19 +1606,6 @@ bool NodeGraphEditor::setLink(Graph* graph, NetworkView* fromView, ItemID source
   if (auto linkptr = graph->setLink(sourceItem, sourcePort, destItem, destPort)) {
     if (responser_)
       responser_->onLinkSet(linkptr.get());
-    auto srcItemPtr = graph->get(sourceItem);
-    auto dstItemPtr = graph->get(destItem);
-    if (auto* dstDye = dstItemPtr->asDyeable()) {
-      if (auto* srcDye = srcItemPtr->asDyeable()) {
-        dstDye->setColor(srcDye->color());
-      }
-    }
-    if (auto* dstRouter = dstItemPtr->asRouter()) {
-      if (auto* srcNodePtr = srcItemPtr->asNode())
-        dstRouter->setLinkColor(srcNodePtr->outputPinColor(sourcePort));
-      else if (auto* srcRouter = srcItemPtr->asRouter())
-        dstRouter->setLinkColor(srcRouter->linkColor());
-    }
     anythingDone = true;
   }
   if (anythingDone)

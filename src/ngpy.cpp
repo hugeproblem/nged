@@ -1119,6 +1119,7 @@ PYBIND11_MODULE(nged, m) {
     })
 
     .def(py::init([](nged::Graph* graph, std::shared_ptr<PyNodeDesc> desc) {
+      if (!desc) throw std::invalid_argument("Python Node need a valid desc");
       return std::make_shared<PyNode>(graph, desc);
     }), py::arg("graph"), py::arg("desc"))
     .def("parm", [](PyNode* self, nged::String const& name) {
@@ -1135,7 +1136,8 @@ PYBIND11_MODULE(nged, m) {
     })
     .def("parmMarkClean", [](PyNode* self) {
         self->parmInspector.markClean();
-    });
+    })
+    .def_property("flags", &nged::Node::flags, &nged::Node::setFlags);
   // }}} Node
 
   // GraphItemFactory {{{

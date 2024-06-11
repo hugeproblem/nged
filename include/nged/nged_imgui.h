@@ -492,6 +492,18 @@ public:
   bool update(NetworkView* view) override;
 };
 
+class HandleContextMenu :  public NetworkView::NamedInteractionState<HandleContextMenu>
+{
+  static constexpr char const* const imguiWindowTitle_ = "NetworkContextMenu";
+  sint numEntryShown_ = 0;
+public:
+  static constexpr StringView className = "context_menu";
+  bool shouldEnter(NetworkView const* view) const override;
+  void onEnter(NetworkView* view) override;
+  bool shouldExit(NetworkView const* view) const override;
+  bool update(NetworkView* view) override;
+};
+
 } // namespace detail
 // }}} Detail
 

@@ -470,15 +470,18 @@ enum class IconType
 
 class TypedNode;
 
+static constexpr uint64_t NODEFLAG_BYPASS = 1ull;
+
 /// Node Data Model
 class Node
     : public GraphItem
     , public Dyeable
 {
 protected:
-  String type_;
-  String name_;
-  Color  color_;
+  String   type_;
+  String   name_;
+  Color    color_;
+  uint64_t flags_ = 0;
 
 public:
   Node(Graph* parent, String type = "", String name = "");
@@ -548,6 +551,10 @@ public:
 
   virtual Color color() const override { return color_; }
   virtual void  setColor(Color c) override { color_ = c; }
+
+  virtual uint64_t flags() const { return flags_; }
+  virtual void     setFlags(uint64_t flags) { flags_ = flags; }
+  virtual bool     isFlagApplicatable(uint64_t flag, String* outReason = nullptr) const { return true; }
 
   virtual Node const*      asNode() const override { return this; }
   virtual Node*            asNode() override { return this; }

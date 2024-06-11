@@ -182,7 +182,7 @@ public:
 
 protected:
   std::unique_ptr<Canvas> canvas_ = {nullptr};
-  std::vector<std::unique_ptr<Effect>> effects_;
+  Vector<std::unique_ptr<Effect>> effects_;
 
   bool            canvasIsFocused_ = false;
   HashSet<ItemID> selectedItems_   = {};
@@ -556,10 +556,20 @@ public:
   using ViewPtr = std::shared_ptr<GraphView>;
   virtual ~NodeGraphEditor() { }
 
+  struct ContextMenuEntry
+  {
+    std::function<bool(GraphView const*)> condition;
+    std::function<void(GraphView*)> reaction;
+    String text;
+  };
+  using ContextMenuEntries = Vector<ContextMenuEntry>;
+  using ContextMenuEntriesPtr = std::shared_ptr<ContextMenuEntries>;
+
 protected:
   HashSet<ViewPtr> views_;              // docs are held by views
   HashSet<ViewPtr> pendingAddViews_;    // newly added views, moved into `views_` on each update()
   HashSet<ViewPtr> pendingRemoveViews_; // views to be removed, also will be done at next update()
+  ContextMenuEntriesPtr contextMenuEntries_;
 
   int                 dyingRefCount_ = 0; // reference count of a dying doc ptr
   String              fileExt_ = "ng";
@@ -597,7 +607,9 @@ public:
   {
     docFactory_ = std::move(factory);
   }
+  void setContextMenus(ContextMenuEntriesPtr menus) { contextMenuEntries_ = menus; }
 
+  auto  contextMenus() const { return contextMenuEntries_; }
   auto  itemFactory()       { return itemFactory_.get(); }
   auto  itemFactory() const { return itemFactory_.get(); }
   auto  viewFactory()       { return viewFactory_; }

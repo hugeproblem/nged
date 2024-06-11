@@ -2939,6 +2939,58 @@ void CreateNodeState::draw(NetworkView* view)
 }
 // }}} CreateNodeState
 
+// Context Menu {{{
+bool HandleContextMenu::shouldEnter(NetworkView const* view) const
+{
+  if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && view && view->editor()) {
+    if (auto cm = view->editor()->contextMenus()) {
+      for (auto&& menuEntry: *cm) {
+        if (!menuEntry.condition || menuEntry.condition(view))
+          return true;
+      }
+    }
+  }
+  return false;
+}
+
+void HandleContextMenu::onEnter(NetworkView* view)
+{
+  numEntryShown_ = 0;
+  ImGui::OpenPopup(imguiWindowTitle_);
+}
+
+bool HandleContextMenu::shouldExit(NetworkView const* view) const
+{
+  return numEntryShown_ == 0;
+}
+
+bool HandleContextMenu::update(NetworkView* view)
+{
+  numEntryShown_ = 0;
+  if (!view->editor() || !view->editor()->contextMenus())
+    return false;
+  if (ImGui::BeginPopup(imguiWindowTitle_)) {
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{12.f, 8.f});
+    ImGui::PushItemWidth(-24);
+    ImGui::Indent(8);
+    for (auto&& menu: *view->editor()->contextMenus()) {
+      if (!menu.condition || menu.condition(view)) {
+        ++numEntryShown_;
+        if (ImGui::MenuItem(menu.text.c_str())) {
+          if (menu.reaction)
+            menu.reaction(view);
+        }
+      }
+    }
+    ImGui::Unindent(8);
+    ImGui::PopItemWidth();
+    ImGui::PopStyleVar();
+    ImGui::EndPopup();
+  }
+  return false;
+}
+// }}} Context Menu
+
 } // namespace detail
 
 GraphItemFactoryPtr addImGuiItems(GraphItemFactoryPtr factory)
@@ -2961,6 +3013,7 @@ void addImGuiInteractions()
   NetworkView::registerInteraction<HandleShortcut>();
   NetworkView::registerInteraction<EditArrow>();
   NetworkView::registerInteraction<ResizeBoxState>();
+  NetworkView::registerInteraction<HandleContextMenu>();
 }
 
 } // namespace nged

@@ -271,6 +271,7 @@ bool Node::serialize(Json& json) const
   json["type"] = type_;
   json["name"] = name_;
   to_json(json["color"], color_);
+  json["flags"] = flags_;
   return GraphItem::serialize(json);
 }
 
@@ -292,6 +293,10 @@ bool Node::deserialize(Json const& json)
   }
   if (auto coloritr = json.find("color"); coloritr != json.end())
     from_json(*coloritr, color_);
+  if (auto flagitr = json.find("flags"); flagitr != json.end())
+    flags_ = *flagitr;
+  else
+    flags_ = 0;
   return true;
 }
 // }}} Node

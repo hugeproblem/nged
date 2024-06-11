@@ -301,6 +301,16 @@ public:
   virtual bool prelude(String& val) const { return false; }
   virtual bool epilogue(String& val) const { return false; }
 
+  virtual bool isFlagApplicatable(uint64_t flags, String* reason) const override
+  {
+    if (type() == "output" && (flags & NODEFLAG_BYPASS)) {
+      if (reason)
+        *reason = "output node cannot be bypassed";
+      return false;
+    }
+    return true;
+  }
+
   virtual sint numMaxInputs() const override { return numDesiredInputs_; }
   virtual sint numOutputs() const override { return type() == "output" ? 0 : 1; }
   virtual void sync(S7Node** inputs, int numInputs)
