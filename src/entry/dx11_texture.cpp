@@ -68,7 +68,7 @@ TexturePtr uploadTextureDX11(ID3D11Device* device, uint8_t const* data, int widt
   ID3D11Texture2D* texture = nullptr;
   if (FAILED(device->CreateTexture2D(&desc, &subres, &texture))) {
     delete resource;
-    return false;
+    return nullptr;
   }
   resource->texture_ = texture;
   D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
@@ -79,7 +79,7 @@ TexturePtr uploadTextureDX11(ID3D11Device* device, uint8_t const* data, int widt
   ID3D11ShaderResourceView* srv = nullptr;
   if (FAILED(device->CreateShaderResourceView(texture, &srvDesc, &srv))) {
     delete resource;
-    return false;
+    return nullptr;
   }
   resource->srv_ = srv;
   IM_ASSERT(texture && srv);

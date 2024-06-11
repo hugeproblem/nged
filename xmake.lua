@@ -109,7 +109,7 @@ target('imgui')
   elseif backend=='gl3' then
     add_files('deps/imgui/backends/imgui_impl_glfw.cpp', 'deps/imgui/backends/imgui_impl_opengl3.cpp')
   end
-  if is_plat('windows') or is_plat('msys') then
+  if is_plat('windows') or is_plat('msys') or is_plat('mingw') then
     add_links('ole32', 'uuid', 'gdi32', 'comctl32', 'dwmapi')
     if backend=='gl2' or backend=='gl3' then
       add_links('glfw3', 'opengl32')
