@@ -901,7 +901,7 @@ public:
             if (view->kind()=="network") {
               auto* netview = static_cast<NetworkView*>(view);
               netview->setSelectedItems({pair.second.id});
-              netview->zoomToSelected(0.2f, 1);
+              netview->zoomToSelected(0.2f, true, 1);
             }
             if (ImGui::IsKeyPressed(ImGuiKey_Enter))
               return false;

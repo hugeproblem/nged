@@ -180,6 +180,11 @@ public:
     addEffect<FadingText>(text, pos, color, duration);
   }
 
+  enum class NavDirection
+  {
+    Up, Down, Left, Right
+  };
+
 protected:
   std::unique_ptr<Canvas> canvas_ = {nullptr};
   Vector<std::unique_ptr<Effect>> effects_;
@@ -237,7 +242,7 @@ public:
   // easingOrder == 2 -> quad
   // easingOrder == 3 -> cubic
   // easingOrder == 4 -> expo
-  void zoomToSelected(float time, int easingOrder = 3, Vec2 offset = {0, 0});
+  void zoomToSelected(float time, bool doScale = true, int easingOrder = 3, Vec2 offset = {0, 0});
   // compare z-order, return -1 if lhs<rhs, 0 if lhs==rhs, 1 if lhs>rhs.
   int zCompare(GraphItem* lhs, GraphItem* rhs) const;
 
@@ -312,6 +317,8 @@ public:
   void onDocModified() override;
   void onGraphModified() override;
   void reset(WeakGraphPtr graph) override;
+
+  void navigate(NavDirection direction);
 
   static void addCommands(class CommandManager*);
 };

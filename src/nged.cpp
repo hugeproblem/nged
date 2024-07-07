@@ -274,7 +274,7 @@ void NetworkView::updateAndDrawEffects(float dt)
   }
 }
 
-void NetworkView::zoomToSelected(float time, int order, Vec2 offset)
+void NetworkView::zoomToSelected(float time, bool doScale, int order, Vec2 offset)
 {
   using gmath::clamp;
   AABB bb;
@@ -294,9 +294,12 @@ void NetworkView::zoomToSelected(float time, int order, Vec2 offset)
   bb.expand(42);
   auto const viewSize = canvas()->viewSize();
   auto const viewScale =
-    clamp(std::min(viewSize.x / bb.width(), viewSize.y / bb.height()), 0.02f, dpiScale());
+    doScale?
+      clamp(std::min(viewSize.x / bb.width(), viewSize.y / bb.height()), 0.02f, dpiScale()):
+      this->canvas()->viewScale();
   auto const destViewPos = bb.center() * viewScale;
   auto       anim        = getState<AnimationState>();
+
   if (anim && time > 0.01f) {
     anim->animateTo(canvas(), destViewPos, viewScale, time, order);
   } else {
@@ -743,6 +746,42 @@ void NetworkView::addCommands(CommandManager* mgr)
     Shortcut{'T', ModKey::ALT},
     "network"}).setMayModifyGraph(false);
 
+  mgr->add(new CommandManager::SimpleCommand{
+    "Navigate/Up",
+    "Go to Upstream Node",
+    [](GraphView* view, StringView args) {
+      static_cast<NetworkView*>(view)->navigate(NetworkView::NavDirection::Up);
+    },
+    Shortcut{'K'},
+    "network"}).setMayModifyGraph(false);
+
+  mgr->add(new CommandManager::SimpleCommand{
+    "Navigate/Down",
+    "Go to Downstream Node",
+    [](GraphView* view, StringView args) {
+      static_cast<NetworkView*>(view)->navigate(NetworkView::NavDirection::Down);
+    },
+    Shortcut{'J'},
+    "network"}).setMayModifyGraph(false);
+
+  mgr->add(new CommandManager::SimpleCommand{
+    "Navigate/Left",
+    "Go to Left Sibling",
+    [](GraphView* view, StringView args) {
+      static_cast<NetworkView*>(view)->navigate(NetworkView::NavDirection::Left);
+    },
+    Shortcut{'H'},
+    "network"}).setMayModifyGraph(false);
+
+  mgr->add(new CommandManager::SimpleCommand{
+    "Navigate/Right",
+    "Go to Right Sibling",
+    [](GraphView* view, StringView args) {
+      static_cast<NetworkView*>(view)->navigate(NetworkView::NavDirection::Right);
+    },
+    Shortcut{'L'},
+    "network"}).setMayModifyGraph(false);
+
   /* currently still handled in HandleShortcut state
   mgr->add(CommandManager::Command{
     "Edit/EnterSubnet", "Enter Subnet",
@@ -763,6 +802,135 @@ void NetworkView::addCommands(CommandManager* mgr)
     }
   };
   */
+}
+
+void NetworkView::navigate(NetworkView::NavDirection direction)
+{
+  auto getSources = [this](ItemID id){
+    Vector<ItemID> upstreams;
+    auto graph = this->graph();
+    auto selected = graph->get(id);
+    if (selected && selected->parent() == graph.get()) {
+      if (Vector<ItemID> links; graph->linksOnNode(id, links)) {
+        for (ItemID linkid: links) {
+          if (Link* link = graph->get(linkid)->asLink(); link && link->output().destItem == id) {
+            upstreams.push_back(link->input().sourceItem);
+          }
+        }
+      }
+    }
+    return upstreams;
+  };
+
+  auto navigateUp = [this, &getSources](){
+    if (this->selectedItems().size() != 1)
+      return;
+    auto id = *this->selectedItems().begin();
+    auto upstreams = getSources(id);
+    if (!upstreams.empty()) {
+      auto graph = this->graph();
+      auto selected = graph->get(id);
+      std::sort(upstreams.begin(),
+        upstreams.end(),
+        [pos=selected->pos(), graph](ItemID a, ItemID b) {
+          return abs(pos.x - graph->get(a)->pos().x) < abs(pos.x - graph->get(b)->pos().x);
+        });
+      this->setSelectedItems({*upstreams.begin()});
+      this->zoomToSelected(0.1f, false);
+    }
+  };
+
+  auto navigateDown = [this](){
+    auto items = this->selectedItems();
+    auto graph = this->graph();
+    if (items.size() != 1)
+      return;
+    auto id = *items.begin();
+    auto selected = graph->get(id);
+    if (selected && selected->parent() == graph.get()) {
+      Vector<ItemID> downstreams;
+      if (Vector<ItemID> links; graph->linksOnNode(id, links)) {
+        for (ItemID linkid: links) {
+          if (Link* link = graph->get(linkid)->asLink(); link && link->input().sourceItem == id) {
+            downstreams.push_back(link->output().destItem);
+          }
+        }
+        if (!downstreams.empty()) {
+          std::sort(downstreams.begin(),
+            downstreams.end(),
+            [pos=selected->pos(), graph](ItemID a, ItemID b) {
+              return abs(pos.x - graph->get(a)->pos().x) < abs(pos.x - graph->get(b)->pos().x);
+            });
+          this->setSelectedItems({*downstreams.begin()});
+          this->zoomToSelected(0.1f, false);
+        }
+      }
+    }
+  };
+
+  auto getSiblings = [this, &getSources](){
+    auto items = this->selectedItems();
+    auto graph = this->graph();
+    Vector<ItemID> siblings;
+    if (items.size() != 1)
+      return siblings;
+    auto id = *items.begin();
+    auto selected = graph->get(id);
+    if (selected && selected->parent() == graph.get()) {
+      Vector<ItemID> downstreams;
+      if (Vector<ItemID> links; graph->linksOnNode(id, links)) {
+        for (ItemID linkid: links) {
+          if (Link* link = graph->get(linkid)->asLink(); link && link->input().sourceItem == id) {
+            downstreams.push_back(link->output().destItem);
+          }
+        }
+        if (downstreams.empty())
+          return siblings;
+        else if (downstreams.size() > 1) {
+          msghub::warn("node has multiple downstream, will use this nearest one");
+          std::sort(downstreams.begin(),
+            downstreams.end(),
+            [pos=selected->pos(), graph](ItemID a, ItemID b) {
+              return abs(pos.x - graph->get(a)->pos().x) < abs(pos.x - graph->get(b)->pos().x);
+            });
+        }
+        return getSources(downstreams.front());
+      }
+    }
+    return siblings;
+  };
+  auto navigateLeftRight = [this, &getSiblings](int offset){
+    auto items = this->selectedItems();
+    if (items.size() != 1)
+      return;
+    auto id = *items.begin();
+    auto siblings = getSiblings();
+    auto graph = this->graph();
+    if (!siblings.empty()) {
+      std::sort(siblings.begin(), siblings.end(),
+        [graph](ItemID a, ItemID b) {
+          return graph->get(a)->pos().x < graph->get(b)->pos().x;
+        });
+      int idx = 0;
+      for (int i=0, n=siblings.size(); i<n; ++i) {
+        if (siblings[i] == id) {
+          idx = i; break;
+        }
+      }
+      this->setSelectedItems({siblings[(idx+siblings.size()+offset)%siblings.size()]});
+      this->zoomToSelected(0.1f, false);
+    }
+  };
+  switch(direction) {
+  case NetworkView::NavDirection::Up:
+    navigateUp(); break;
+  case NetworkView::NavDirection::Down:
+    navigateDown(); break;
+  case NetworkView::NavDirection::Left:
+    navigateLeftRight(-1); break;
+  case NetworkView::NavDirection::Right:
+    navigateLeftRight(1); break;
+  }
 }
 // }}} NetworkView
 
