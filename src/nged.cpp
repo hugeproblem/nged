@@ -295,7 +295,7 @@ void NetworkView::zoomToSelected(float time, bool doScale, int order, Vec2 offse
   auto const viewSize = canvas()->viewSize();
   auto const viewScale =
     doScale?
-      clamp(std::min(viewSize.x / bb.width(), viewSize.y / bb.height()), 0.02f, dpiScale()):
+      clamp(std::min(viewSize.x / bb.width(), viewSize.y / bb.height()), 0.02f, 1.f):
       this->canvas()->viewScale();
   auto const destViewPos = bb.center() * viewScale;
   auto       anim        = getState<AnimationState>();
@@ -1774,6 +1774,19 @@ bool NodeGraphEditor::setLink(Graph* graph, NetworkView* fromView, ItemID source
   if (auto linkptr = graph->setLink(sourceItem, sourcePort, destItem, destPort)) {
     if (responser_)
       responser_->onLinkSet(linkptr.get());
+    auto srcItemPtr = graph->get(sourceItem);
+    auto dstItemPtr = graph->get(destItem);
+    if (auto* dstdye = dstItemPtr->asDyeable(); dstdye && !dstdye->hasSetColor()) {
+      if (auto* srcdye = srcItemPtr->asDyeable(); srcdye && srcdye->hasSetColor())
+        dstdye->setColor(srcdye->color());
+    }
+    if (auto* dstrouter = dstItemPtr->asRouter()) {
+      if (auto* srcnodeptr = srcItemPtr->asNode())
+        dstrouter->setLinkColor(srcnodeptr->outputPinColor(sourcePort));
+      else if (auto* srcrouter = srcItemPtr->asRouter())
+        dstrouter->setLinkColor(srcrouter->linkColor());
+    }
+
     anythingDone = true;
   }
   if (anythingDone)
