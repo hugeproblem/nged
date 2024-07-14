@@ -299,8 +299,10 @@ enum class GraphItemState
 class Dyeable // has color
 {
 public:
-  Color virtual color() const    = 0;
-  void virtual setColor(Color c) = 0;
+  virtual ~Dyeable() {}
+  virtual Color color() const    = 0;
+  virtual void  setColor(Color c) = 0;
+  virtual bool  hasSetColor() const { return false; }
 };
 
 class GraphItem : public std::enable_shared_from_this<GraphItem>
@@ -551,6 +553,7 @@ public:
 
   virtual Color color() const override { return color_; }
   virtual void  setColor(Color c) override { color_ = c; }
+  virtual bool  hasSetColor() const override;
 
   virtual uint64_t flags() const { return flags_; }
   virtual void     setFlags(uint64_t flags) { flags_ = flags; }

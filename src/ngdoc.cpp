@@ -178,6 +178,11 @@ Color Node::outputPinColor(sint i) const
   return color_;
 }
 
+bool Node::hasSetColor() const
+{
+  return color_ != gmath::fromUint32sRGBA(UIStyle::instance().nodeDefaultColor);
+}
+
 bool Node::mergedInputBound(AABB& bound) const
 {
   auto const n = numMaxInputs();
