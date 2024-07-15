@@ -233,6 +233,7 @@ public:
   void        hideItemOnce(ItemID id) { hiddenOnceItems_.insert(id); }
   void        unhideItem(ItemID id) { hiddenItems_.erase(id); }
   void        unhideAll() { hiddenItems_.clear(); }
+  bool        toggleNodeFlagOfSelection(uint64_t flag); // set flag if none of the selected node has the flag, otherwise unset the flag, returns the previous flag
   bool        copyTo(Json&);
   bool        pasteFrom(Json const&);
   Node*       solySelectedNode() const;

@@ -419,6 +419,38 @@ void NetworkView::reset(WeakGraphPtr graph)
   zoomToSelected(0);
 }
 
+bool NetworkView::toggleNodeFlagOfSelection(uint64_t flag)
+{
+  bool flagAllSet = true;
+  auto graph = graph_.lock();
+  if (!graph) {
+    msghub::error("running on null graph");
+    return false;
+  }
+  for (auto&& id: selectedItems_) {
+    if (auto* node = graph->get(id)->asNode()) {
+      if ((node->flags() & flag) == 0) {
+        flagAllSet = false;
+        break;
+      }
+    }
+  }
+  if (flagAllSet) {
+    for (auto&& id: selectedItems_) {
+      if (auto* node = graph->get(id)->asNode()) {
+        node->setFlags(node->flags() & ~flag);
+      }
+    }
+  } else {
+    for (auto&& id: selectedItems_) {
+      if (auto* node = graph->get(id)->asNode()) {
+        node->setFlags(node->flags() | flag);
+      }
+    }
+  }
+  return flagAllSet;
+}
+
 bool NetworkView::copyTo(Json& json)
 {
   json = Json();
@@ -781,6 +813,15 @@ void NetworkView::addCommands(CommandManager* mgr)
     },
     Shortcut{'L'},
     "network"}).setMayModifyGraph(false);
+
+  mgr->add(new CommandManager::SimpleCommand{
+    "Edit/ToggleBypass",
+    "Toggle Bypass Flag (Mute/Unmute)",
+    [](GraphView* view, StringView args) {
+      static_cast<NetworkView*>(view)->toggleNodeFlagOfSelection(NODEFLAG_BYPASS);
+    },
+    Shortcut{'M'},
+    "network"});
 
   /* currently still handled in HandleShortcut state
   mgr->add(CommandManager::Command{
