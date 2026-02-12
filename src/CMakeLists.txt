@@ -3,6 +3,10 @@ add_library(ngdoc STATIC
     ngdoc.cpp
     ngdraw.cpp
     style.cpp
+    ${CMAKE_SOURCE_DIR}/include/nged/ngdoc.h
+    ${CMAKE_SOURCE_DIR}/include/nged/gmath.h
+    ${CMAKE_SOURCE_DIR}/include/nged/style.h
+    ${CMAKE_SOURCE_DIR}/include/nged/utils.h
 )
 
 target_include_directories(ngdoc PUBLIC
@@ -19,6 +23,8 @@ target_link_libraries(ngdoc PUBLIC spdlog miniz)
 # entry library
 add_library(entry STATIC
     entry/entry.cpp
+    ${CMAKE_SOURCE_DIR}/include/nged/entry/entry.h
+    ${CMAKE_SOURCE_DIR}/include/nged/entry/texture.h
 )
 
 if(BACKEND STREQUAL "dx11")
@@ -79,6 +85,11 @@ add_library(nged STATIC
     nged.cpp
     nged_imgui.cpp
     nged_imgui_fonts.cpp
+    ${CMAKE_SOURCE_DIR}/include/nged/nged.h
+    ${CMAKE_SOURCE_DIR}/include/nged/nged_imgui.h
+    ${CMAKE_SOURCE_DIR}/include/nged/ngpy.h
+    ${CMAKE_SOURCE_DIR}/include/nged/pybind11_imgui.h
+    ${CMAKE_SOURCE_DIR}/include/nged/res/fa_icondef.h
 )
 
 target_include_directories(nged PUBLIC
@@ -87,6 +98,7 @@ target_include_directories(nged PUBLIC
     ${CMAKE_SOURCE_DIR}/deps/nlohmann
     ${CMAKE_SOURCE_DIR}/deps/spdlog/include
     ${CMAKE_SOURCE_DIR}/deps/parallel_hashmap/parallel_hashmap
+    ${CMAKE_SOURCE_DIR}/include/nged/entry
 )
 
 target_link_libraries(nged PUBLIC

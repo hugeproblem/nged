@@ -5,6 +5,7 @@ add_executable(demo
 
 target_include_directories(demo PRIVATE
     ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/deps/boxer/include
 )
 
@@ -17,6 +18,7 @@ add_executable(typed_demo
 
 target_include_directories(typed_demo PRIVATE
     ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/deps/boxer/include
 )
 

@@ -10,6 +10,16 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # Global definitions
 add_definitions(-DSPDLOG_COMPILED_LIB=1)
 
+# AddressSanitizer configuration
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+        add_link_options(-fsanitize=address)
+    elseif(MSVC)
+        add_compile_options(/fsanitize=address)
+    endif()
+endif()
+
 # Build type specific settings
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG)
@@ -74,3 +84,15 @@ add_subdirectory(tests)
 if(NOT PYTHON_EXECUTABLE STREQUAL "no")
     add_subdirectory(python)
 endif()
+
+# Install configuration
+install(DIRECTORY include/
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)
+
+install(TARGETS nged ngdoc entry
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
