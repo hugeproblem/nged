@@ -34,19 +34,18 @@ endif()
 add_compile_definitions($<$<CONFIG:Debug>:DEBUG> $<$<CONFIG:AddressSanitize>:DEBUG>)
 
 
-# Options
-set(BACKEND "dx11" CACHE STRING "Renderer backend (dx11, dx12, vulkan, gl2, gl3)")
-set_property(CACHE BACKEND PROPERTY STRINGS dx11 dx12 vulkan gl2 gl3)
-
+# Determine default backend
 if(WIN32)
-    if(NOT DEFINED BACKEND)
-        set(BACKEND "dx11")
-    endif()
+    set(DEFAULT_BACKEND "dx11")
+elseif(APPLE)
+    set(DEFAULT_BACKEND "gl3")
 else()
-    if(NOT DEFINED BACKEND)
-        set(BACKEND "gl2")
-    endif()
+    set(DEFAULT_BACKEND "gl2")
 endif()
+
+# Options
+set(BACKEND "${DEFAULT_BACKEND}" CACHE STRING "Renderer backend (dx11, dx12, vulkan, gl2, gl3)")
+set_property(CACHE BACKEND PROPERTY STRINGS dx11 dx12 vulkan gl2 gl3)
 
 set(PYTHON_EXECUTABLE "no" CACHE STRING "Python executable path, or 'no' if python binding is not needed")
 set(VULKAN_SDK "" CACHE PATH "Vulkan SDK path")
