@@ -1,0 +1,21 @@
+diff --git a/backends/imgui_impl_metal.mm b/backends/imgui_impl_metal.mm
+index d44e65b16..3c370f708 100644
+--- a/backends/imgui_impl_metal.mm
++++ b/backends/imgui_impl_metal.mm
+@@ -510,7 +510,15 @@ inline static CGSize MakeScaledSize(CGSize size, CGFloat scale)
+ static void ImGui_ImplMetal_SetWindowSize(ImGuiViewport* viewport, ImVec2 size)
+ {
+     ImGuiViewportDataMetal* data = (ImGuiViewportDataMetal*)viewport->RendererUserData;
+-    data->MetalLayer.drawableSize = MakeScaledSize(CGSizeMake(size.x, size.y), viewport->DpiScale);
++    CGFloat scale = viewport->DpiScale;
++#if TARGET_OS_OSX
++    if (void* handle = viewport->PlatformHandleRaw ? viewport->PlatformHandleRaw : viewport->PlatformHandle)
++    {
++        NSWindow* window = (__bridge NSWindow*)handle;
++        scale = window.backingScaleFactor;
++    }
++#endif
++    data->MetalLayer.drawableSize = MakeScaledSize(CGSizeMake(size.x, size.y), scale);
+ }
+ 
+ static void ImGui_ImplMetal_RenderWindow(ImGuiViewport* viewport, void*)

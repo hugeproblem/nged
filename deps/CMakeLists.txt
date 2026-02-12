@@ -101,9 +101,28 @@ elseif(BACKEND STREQUAL "gl3")
         imgui/backends/imgui_impl_opengl3.cpp
     )
 elseif(BACKEND STREQUAL "metal")
+    find_program(PATCH_PROGRAM patch)
+    if(NOT PATCH_PROGRAM)
+        message(FATAL_ERROR "patch program not found, required for Metal backend")
+    endif()
+
+    set(IMGUI_METAL_ORIG "${CMAKE_CURRENT_SOURCE_DIR}/imgui/backends/imgui_impl_metal.mm")
+    set(IMGUI_METAL_PATCH "${CMAKE_SOURCE_DIR}/patches/imgui_impl_metal.patch")
+    set(IMGUI_METAL_PATCHED "${CMAKE_CURRENT_BINARY_DIR}/imgui_patched/imgui_impl_metal.mm")
+
+    add_custom_command(
+        OUTPUT ${IMGUI_METAL_PATCHED}
+        COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}/imgui_patched
+        COMMAND ${CMAKE_COMMAND} -E copy ${IMGUI_METAL_ORIG} ${IMGUI_METAL_PATCHED}
+        COMMAND ${PATCH_PROGRAM} -u -N -p2 -i ${IMGUI_METAL_PATCH} -d ${CMAKE_CURRENT_BINARY_DIR}/imgui_patched
+        DEPENDS ${IMGUI_METAL_ORIG} ${IMGUI_METAL_PATCH}
+        COMMENT "Patching imgui_impl_metal.mm..."
+        VERBATIM
+    )
+
     target_sources(imgui PRIVATE
         imgui/backends/imgui_impl_glfw.cpp
-        imgui/backends/imgui_impl_metal.mm
+        ${IMGUI_METAL_PATCHED}
     )
     target_link_libraries(imgui PUBLIC "-framework Metal" "-framework QuartzCore")
 endif()

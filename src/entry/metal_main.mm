@@ -105,6 +105,13 @@ int startMainLoop()
             glfwGetFramebufferSize(window, &width, &height);
             layer.drawableSize = CGSizeMake(width, height);
             id<CAMetalDrawable> drawable = [layer nextDrawable];
+            if (!drawable)
+            {
+                // Native window might be minimized or obscured
+                // We should yield to avoid busy loop
+                [NSThread sleepForTimeInterval:0.01]; 
+                continue;
+            }
 
             id<MTLCommandBuffer> commandBuffer = [commandQueue commandBuffer];
             renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
