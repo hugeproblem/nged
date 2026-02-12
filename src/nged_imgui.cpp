@@ -2568,7 +2568,7 @@ bool HandleShortcut::update(NetworkView* view)
           link->onEnter(view);
       }
       if (auto create = view->getState<CreateNodeState>()) {
-        create->activate();
+        create->activate(solyLinkableItem->id());
       }
     } else {
       tryEnter(solyLinkableItem->id());

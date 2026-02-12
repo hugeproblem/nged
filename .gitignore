@@ -16,3 +16,7 @@ tags
 compile_commands.json
 settings.lua
 setup.cfg
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install/

@@ -1,0 +1,159 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {
+        "major": 3,
+        "minor": 15,
+        "patch": 0
+    },
+    "configurePresets": [
+        {
+            "name": "windows-base",
+            "hidden": true,
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Windows"
+            }
+        },
+        {
+            "name": "windows-dx11",
+            "displayName": "Windows - Direct3D 11",
+            "description": "Default Windows configuration with DX11 backend",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "BACKEND": "dx11"
+            }
+        },
+        {
+            "name": "windows-dx12",
+            "displayName": "Windows - Direct3D 12",
+            "description": "Windows configuration with DX12 backend",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "BACKEND": "dx12"
+            }
+        },
+        {
+            "name": "windows-vulkan",
+            "displayName": "Windows - Vulkan",
+            "description": "Windows configuration with Vulkan backend",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "BACKEND": "vulkan"
+            }
+        },
+        {
+            "name": "windows-gl3",
+            "displayName": "Windows - OpenGL 3",
+            "description": "Windows configuration with OpenGL 3 backend",
+            "inherits": "windows-base",
+            "cacheVariables": {
+                "BACKEND": "gl3"
+            }
+        },
+        {
+            "name": "linux-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Linux"
+            }
+        },
+        {
+            "name": "linux-gl2",
+            "displayName": "Linux - OpenGL 2",
+            "description": "Default Linux configuration with OpenGL 2 backend",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "BACKEND": "gl2"
+            }
+        },
+        {
+            "name": "linux-gl3",
+            "displayName": "Linux - OpenGL 3",
+            "description": "Linux configuration with OpenGL 3 backend",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "BACKEND": "gl3"
+            }
+        },
+        {
+            "name": "linux-vulkan",
+            "displayName": "Linux - Vulkan",
+            "description": "Linux configuration with Vulkan backend",
+            "inherits": "linux-base",
+            "cacheVariables": {
+                "BACKEND": "vulkan"
+            }
+        },
+        {
+            "name": "macos-base",
+            "hidden": true,
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+            },
+            "condition": {
+                "type": "equals",
+                "lhs": "${hostSystemName}",
+                "rhs": "Darwin"
+            }
+        },
+        {
+            "name": "macos-gl2",
+            "displayName": "macOS - OpenGL 2",
+            "description": "Default macOS configuration with OpenGL 2 backend",
+            "inherits": "macos-base",
+            "cacheVariables": {
+                "BACKEND": "gl2"
+            }
+        },
+        {
+            "name": "macos-gl3",
+            "displayName": "macOS - OpenGL 3",
+            "description": "macOS configuration with OpenGL 3 backend",
+            "inherits": "macos-base",
+            "cacheVariables": {
+                "BACKEND": "gl3"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "windows-dx11-release",
+            "displayName": "Release",
+            "configurePreset": "windows-dx11",
+            "configuration": "Release"
+        },
+        {
+            "name": "windows-dx11-debug",
+            "displayName": "Debug",
+            "configurePreset": "windows-dx11",
+            "configuration": "Debug"
+        },
+        {
+            "name": "linux-gl2-release",
+            "displayName": "Release",
+            "configurePreset": "linux-gl2"
+        },
+        {
+            "name": "macos-gl2-release",
+            "displayName": "Release",
+            "configurePreset": "macos-gl2"
+        }
+    ]
+}

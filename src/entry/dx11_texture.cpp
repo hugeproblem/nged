@@ -10,7 +10,7 @@ public:
   ID3D11ShaderResourceView* srv_ = nullptr;
   ~TextureResource();
   void release();
-  ImTextureID id() const { return static_cast<ImTextureID>(srv_); }
+  ImTextureID id() const { return reinterpret_cast<ImTextureID>(srv_); }
 };
 
 static TextureResourcePool<TextureResource>& resourcePool()

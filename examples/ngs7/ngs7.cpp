@@ -8,7 +8,7 @@
 #include "s7-extensions.h"
 
 #include <subprocess.h>
-
+#include <fmt/ranges.h>
 #include <nlohmann/json.hpp>
 #include <misc/cpp/imgui_stdlib.h>
 

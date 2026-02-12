@@ -6,6 +6,7 @@
 
 #include <nlohmann/json.hpp>
 #include <spdlog/spdlog.h>
+#include <fmt/ranges.h>
 
 #include <algorithm>
 #include <cctype>
@@ -1470,11 +1471,13 @@ bool NodeGraphEditor::loadDocInto(StringView path, NodeGraphDocPtr dest)
   String filepath = String(path);
   if (filepath.empty()) {
     char* cpath  = nullptr;
-    auto  result = NFD_OpenDialog(fileExt_.c_str(), nullptr, &cpath);
+    // nativefiledialog-extended uses new API signature
+    nfdu8filteritem_t filters[1] = {{fileExt_.empty() ? "All Files" : "Graph Files", fileExt_.c_str()}};
+    auto  result = NFD_OpenDialogU8(&cpath, fileExt_.empty() ? nullptr : filters, fileExt_.empty() ? 0 : 1, nullptr);
     if (result == NFD_OKAY && cpath) {
       if (*cpath)
         filepath = cpath;
-      free(cpath);
+      NFD_FreePathU8(cpath);
     } else if (result == NFD_CANCEL) {
       return false;
     }
@@ -1513,7 +1516,9 @@ bool NodeGraphEditor::saveDoc(DocPtr doc)
   bool succeed = false;
   if (doc->savePath().empty()) {
     char* path   = nullptr;
-    auto  result = NFD_SaveDialog(fileExt_.c_str(), nullptr, &path);
+    // nativefiledialog-extended uses new API signature
+    nfdu8filteritem_t filters[1] = {{fileExt_.empty() ? "All Files" : "Graph Files", fileExt_.c_str()}};
+    auto  result = NFD_SaveDialogU8(&path, fileExt_.empty() ? nullptr : filters, fileExt_.empty() ? 0 : 1, nullptr, nullptr);
     if (result == NFD_OKAY && path) {
       succeed = doc->saveAs(path);
       if (succeed) {
@@ -1523,7 +1528,7 @@ bool NodeGraphEditor::saveDoc(DocPtr doc)
           }
         }
       }
-      free(path);
+      NFD_FreePathU8(path);
     } else {
       succeed = false;
     }
@@ -1540,10 +1545,12 @@ bool NodeGraphEditor::saveDocAs(DocPtr doc, StringView inputpath)
   bool succeed = false;
   if (inputpath.empty()) {
     char* path   = nullptr;
-    auto  result = NFD_SaveDialog(fileExt_.c_str(), nullptr, &path);
+    // nativefiledialog-extended uses new API signature
+    nfdu8filteritem_t filters[1] = {{fileExt_.empty() ? "All Files" : "Graph Files", fileExt_.c_str()}};
+    auto  result = NFD_SaveDialogU8(&path, fileExt_.empty() ? nullptr : filters, fileExt_.empty() ? 0 : 1, nullptr, nullptr);
     if (result == NFD_OKAY && path) {
       succeed = doc->saveAs(path);
-      free(path);
+      NFD_FreePathU8(path);
     } else {
       succeed = false;
     }

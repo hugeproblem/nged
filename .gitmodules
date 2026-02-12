@@ -36,3 +36,9 @@
 [submodule "deps/stduuid"]
 	path = deps/stduuid
 	url = https://github.com/mariusbancila/stduuid.git
+[submodule "deps/fmt"]
+	path = deps/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "deps/nativefiledialog-extended"]
+	path = deps/nativefiledialog-extended
+	url = https://github.com/btzy/nativefiledialog-extended
