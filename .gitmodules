@@ -5,9 +5,6 @@
 [submodule "deps/spdlog"]
 	path = deps/spdlog
 	url = https://github.com/gabime/spdlog.git
-[submodule "deps/nativefiledialog"]
-	path = deps/nativefiledialog
-	url = https://github.com/mlabbe/nativefiledialog.git
 [submodule "deps/boxer"]
 	path = deps/boxer
 	url = https://github.com/find/Boxer.git

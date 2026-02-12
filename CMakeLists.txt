@@ -71,10 +71,11 @@ if(APPLE)
         include_directories($ENV{HOMEBREW_PREFIX}/include)
         link_directories($ENV{HOMEBREW_PREFIX}/lib)
     endif()
+    add_definitions(-DGL_SILENCE_DEPRECATION)
 endif()
 
 # Find packages
-if(WIN32 AND (BACKEND STREQUAL "vulkan" OR BACKEND STREQUAL "gl2" OR BACKEND STREQUAL "gl3"))
+if((WIN32 OR APPLE) AND (BACKEND STREQUAL "vulkan" OR BACKEND STREQUAL "gl2" OR BACKEND STREQUAL "gl3"))
     find_package(glfw3 REQUIRED)
 endif()
 

@@ -12,7 +12,7 @@ public:
 
 ImTextureID Texture::id() const
 {
-  return reinterpret_cast<ImTextureID>(size_t(resource_->id_));
+  return (ImTextureID)(size_t(resource_->id_));
 }
 
 void Texture::release()
