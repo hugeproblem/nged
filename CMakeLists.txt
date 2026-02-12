@@ -11,19 +11,28 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 add_definitions(-DSPDLOG_COMPILED_LIB=1)
 
 # AddressSanitizer configuration
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-        add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-        add_link_options(-fsanitize=address)
-    elseif(MSVC)
-        add_compile_options(/fsanitize=address)
-    endif()
+set(CMAKE_CXX_FLAGS_ADDRESSSANITIZE "${CMAKE_CXX_FLAGS_DEBUG}" CACHE STRING "Flags used by the CXX compiler during AddressSanitize builds." FORCE)
+set(CMAKE_C_FLAGS_ADDRESSSANITIZE "${CMAKE_C_FLAGS_DEBUG}" CACHE STRING "Flags used by the C compiler during AddressSanitize builds." FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_ADDRESSSANITIZE "${CMAKE_EXE_LINKER_FLAGS_DEBUG}" CACHE STRING "Flags used for linking binaries during AddressSanitize builds." FORCE)
+set(CMAKE_SHARED_LINKER_FLAGS_ADDRESSSANITIZE "${CMAKE_SHARED_LINKER_FLAGS_DEBUG}" CACHE STRING "Flags used by the shared libraries linker during AddressSanitize builds." FORCE)
+
+if(CMAKE_CONFIGURATION_TYPES)
+    list(APPEND CMAKE_CONFIGURATION_TYPES "AddressSanitize")
+    list(REMOVE_DUPLICATES CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_CONFIGURATION_TYPES "${CMAKE_CONFIGURATION_TYPES}" CACHE STRING "Semicolon separated list of supported configuration types." FORCE)
 endif()
 
-# Build type specific settings
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(-DDEBUG)
+if(MSVC)
+    add_compile_options($<$<CONFIG:AddressSanitize>:/fsanitize=address>)
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options($<$<CONFIG:AddressSanitize>:-fsanitize=address> $<$<CONFIG:AddressSanitize>:-fno-omit-frame-pointer>)
+    add_link_options($<$<CONFIG:AddressSanitize>:-fsanitize=address>)
 endif()
+
+
+# Build type specific settings
+add_compile_definitions($<$<CONFIG:Debug>:DEBUG> $<$<CONFIG:AddressSanitize>:DEBUG>)
+
 
 # Options
 set(BACKEND "dx11" CACHE STRING "Renderer backend (dx11, dx12, vulkan, gl2, gl3)")
