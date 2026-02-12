@@ -52,6 +52,11 @@ elseif(BACKEND STREQUAL "gl3")
         entry/gl3_main.cpp
         entry/gl_texture.cpp
     )
+elseif(BACKEND STREQUAL "metal")
+    target_sources(entry PRIVATE
+        entry/metal_main.mm
+        entry/metal_texture.mm
+    )
 endif()
 
 target_include_directories(entry PUBLIC
@@ -78,6 +83,9 @@ if(APPLE)
         "-framework IOKit"
         "-framework QuartzCore"
     )
+    if(BACKEND STREQUAL "metal")
+        target_link_libraries(entry PUBLIC "-framework Metal")
+    endif()
 endif()
 
 # nged library

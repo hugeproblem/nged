@@ -38,14 +38,14 @@ add_compile_definitions($<$<CONFIG:Debug>:DEBUG> $<$<CONFIG:AddressSanitize>:DEB
 if(WIN32)
     set(DEFAULT_BACKEND "dx11")
 elseif(APPLE)
-    set(DEFAULT_BACKEND "gl3")
+    set(DEFAULT_BACKEND "metal")
 else()
     set(DEFAULT_BACKEND "gl2")
 endif()
 
 # Options
-set(BACKEND "${DEFAULT_BACKEND}" CACHE STRING "Renderer backend (dx11, dx12, vulkan, gl2, gl3)")
-set_property(CACHE BACKEND PROPERTY STRINGS dx11 dx12 vulkan gl2 gl3)
+set(BACKEND "${DEFAULT_BACKEND}" CACHE STRING "Renderer backend (dx11, dx12, vulkan, gl2, gl3, metal)")
+set_property(CACHE BACKEND PROPERTY STRINGS dx11 dx12 vulkan gl2 gl3 metal)
 
 set(PYTHON_EXECUTABLE "no" CACHE STRING "Python executable path, or 'no' if python binding is not needed")
 set(VULKAN_SDK "" CACHE PATH "Vulkan SDK path")
@@ -61,6 +61,8 @@ elseif(BACKEND STREQUAL "gl2")
     add_definitions(-DNGED_BACKEND_GL2)
 elseif(BACKEND STREQUAL "gl3")
     add_definitions(-DNGED_BACKEND_GL3)
+elseif(BACKEND STREQUAL "metal")
+    add_definitions(-DNGED_BACKEND_METAL)
 endif()
 
 # Platform specific settings
@@ -74,7 +76,7 @@ if(APPLE)
 endif()
 
 # Find packages
-if((WIN32 OR APPLE) AND (BACKEND STREQUAL "vulkan" OR BACKEND STREQUAL "gl2" OR BACKEND STREQUAL "gl3"))
+if((WIN32 OR APPLE) AND (BACKEND STREQUAL "vulkan" OR BACKEND STREQUAL "gl2" OR BACKEND STREQUAL "gl3" OR BACKEND STREQUAL "metal"))
     find_package(glfw3 REQUIRED)
 endif()
 

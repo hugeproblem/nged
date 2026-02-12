@@ -100,6 +100,12 @@ elseif(BACKEND STREQUAL "gl3")
         imgui/backends/imgui_impl_glfw.cpp
         imgui/backends/imgui_impl_opengl3.cpp
     )
+elseif(BACKEND STREQUAL "metal")
+    target_sources(imgui PRIVATE
+        imgui/backends/imgui_impl_glfw.cpp
+        imgui/backends/imgui_impl_metal.mm
+    )
+    target_link_libraries(imgui PUBLIC "-framework Metal" "-framework QuartzCore")
 endif()
 
 # Platform specific libraries for ImGui
@@ -107,7 +113,7 @@ if(WIN32)
     target_link_libraries(imgui PUBLIC ole32 uuid gdi32 comctl32 dwmapi)
     if(BACKEND STREQUAL "gl2" OR BACKEND STREQUAL "gl3")
         target_link_libraries(imgui PUBLIC glfw3 opengl32)
-    elseif(BACKEND STREQUAL "vulkan")
+    elseif(BACKEND STREQUAL "vulkan" OR BACKEND STREQUAL "metal")
         target_link_libraries(imgui PUBLIC glfw3)
     endif()
 else()
