@@ -1,0 +1,49 @@
+diff --git a/include/sol/compatibility/compat-5.3.h b/include/sol/compatibility/compat-5.3.h
+index 8d32d2d7..24eb43d1 100644
+--- a/include/sol/compatibility/compat-5.3.h
++++ b/include/sol/compatibility/compat-5.3.h
+@@ -46,6 +46,19 @@ extern "C" {
+ #define COMPAT53_CONCAT(a, b) COMPAT53_CONCAT_HELPER(a, b)
+ 
+ 
++/* LuaJIT/Lua 5.1/Lua 5.5? does not have the updated
++* error codes for thread status/function returns (but some patched versions do)
++* define it only if it's not found
++*/
++#if !defined(LUA_ERRGCMM)
++/* Use + 2 because in some versions of Lua (Lua 5.1)
++* LUA_ERRFILE is defined as (LUA_ERRERR+1)
++* so we need to avoid it (LuaJIT might have something at this
++* integer value too)
++*/
++#  define LUA_ERRGCMM (LUA_ERRERR + 2)
++#endif /* LUA_ERRGCMM define */
++
+ 
+ /* declarations for Lua 5.1 */
+ #if defined(LUA_VERSION_NUM) && LUA_VERSION_NUM == 501
+@@ -405,7 +418,7 @@ COMPAT53_API void luaL_requiref(lua_State *L, const char *modname,
+ 
+ 
+ /* other Lua versions */
+-#if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM < 501 || LUA_VERSION_NUM > 504
++#if !defined(LUA_VERSION_NUM) || LUA_VERSION_NUM < 501 || LUA_VERSION_NUM > 505
+ 
+ #  error "unsupported Lua version (i.e. not Lua 5.1, 5.2, 5.3, or 5.4)"
+ 
+diff --git a/include/sol/state.hpp b/include/sol/state.hpp
+index ed2412ed..e3883bd7 100644
+--- a/include/sol/state.hpp
++++ b/include/sol/state.hpp
+@@ -39,7 +39,11 @@ namespace sol {
+ 		}
+ 
+ 		state(lua_CFunction panic, lua_Alloc alfunc, void* alpointer = nullptr)
++#if defined(LUA_VERSION_NUM) && LUA_VERSION_NUM > 504
++		: unique_base(lua_newstate(alfunc, alpointer, 0)), state_view(unique_base::get()) {
++#else
+ 		: unique_base(lua_newstate(alfunc, alpointer)), state_view(unique_base::get()) {
++#endif
+ 			set_default_state(unique_base::get(), panic);
+ 		}
+ 

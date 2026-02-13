@@ -30,6 +30,27 @@ add_subdirectory(doctest)
 set(SOL2_BUILD_LUA OFF CACHE BOOL "" FORCE)
 set(SOL2_TESTS OFF CACHE BOOL "" FORCE)
 set(SOL2_CI OFF CACHE BOOL "" FORCE)
+
+# Patch sol2 if needed
+execute_process(
+    COMMAND git apply --check "${CMAKE_SOURCE_DIR}/patches/sol2.patch"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/sol2"
+    RESULT_VARIABLE PATCH_CHECK_RESULT
+    OUTPUT_QUIET ERROR_QUIET
+)
+
+if(PATCH_CHECK_RESULT EQUAL 0)
+    message(STATUS "Applying sol2 patch...")
+    execute_process(
+        COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/sol2.patch"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/sol2"
+        RESULT_VARIABLE PATCH_RESULT
+    )
+    if(NOT PATCH_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to apply sol2 patch")
+    endif()
+endif()
+
 add_subdirectory(sol2)
 
 # pybind11 - use its own CMake configuration (for python binding)
