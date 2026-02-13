@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core>=0.10.0", "pybind11>=2.13.0"]
+requires = ["scikit-build-core>=0.10.0", "pybind11>=2.13.0", "pybind11-stubgen"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -30,6 +30,7 @@ keywords = ["node-graph", "editor", "ui", "visualization"]
 Homepage = "https://github.com/hugeproblem/nged"
 
 [tool.scikit-build]
+build-dir = "build-py"
 cmake.version = ">=3.15"
 cmake.minimum-version = "3.15"
 cmake.args = ["-DPYTHON_EXECUTABLE={python.executable}"]
