@@ -1,0 +1,13 @@
+diff --git a/s7.c b/s7.c
+index 41d086e..fa93710 100644
+--- a/s7.c
++++ b/s7.c
+@@ -38799,7 +38799,7 @@ static s7_pointer g_uname(s7_scheme *sc, s7_pointer unused_args)
+ #else
+ static s7_pointer g_uname(s7_scheme *sc, s7_pointer args)
+ { /* return a list to be somewhat compatible with the uname-related functions */
+-  return(s7_list(sc, 5, sc->nil_string, sc->nil_string, sc->nil_string, sc->nil_string, sc->nil_string));
++  return(s7_list(sc, 5, nil_string, nil_string, nil_string, nil_string, nil_string));
+ }
+ #endif
+ 

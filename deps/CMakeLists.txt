@@ -181,6 +181,26 @@ endif()
 
 target_include_directories(boxer PUBLIC boxer/include)
 
+# Patch s7 if needed
+execute_process(
+    COMMAND git apply --check "${CMAKE_SOURCE_DIR}/patches/s7.patch"
+    WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/s7"
+    RESULT_VARIABLE S7_PATCH_CHECK_RESULT
+    OUTPUT_QUIET ERROR_QUIET
+)
+
+if(S7_PATCH_CHECK_RESULT EQUAL 0)
+    message(STATUS "Applying s7 patch...")
+    execute_process(
+        COMMAND git apply "${CMAKE_SOURCE_DIR}/patches/s7.patch"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/s7"
+        RESULT_VARIABLE S7_PATCH_RESULT
+    )
+    if(NOT S7_PATCH_RESULT EQUAL 0)
+        message(FATAL_ERROR "Failed to apply s7 patch")
+    endif()
+endif()
+
 # s7 Scheme interpreter - no built-in CMake
 add_library(s7 STATIC
     s7/s7.c
