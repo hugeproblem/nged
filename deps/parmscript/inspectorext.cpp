@@ -15,11 +15,6 @@ bool inspectFilePath(Parm& parm)
   auto label = "##" + parm.path();
   bool mod = false;
 
-  auto filters = parm.getMeta<string>("filters", "");
-  auto dlg = NFD_OpenDialog;
-  if (parm.getMeta<string>("dialog", "open") == "save")
-    dlg = NFD_SaveDialog;
-
   if (ImGui::InputText(label.c_str(), &path, ImGuiInputTextFlags_EnterReturnsTrue)) {
     mod = true;
   }
@@ -28,7 +23,13 @@ bool inspectFilePath(Parm& parm)
   auto btlabel = "...##" + parm.path();
   if (ImGui::Button(btlabel.c_str())) {
     char* cpath  = nullptr;
-    auto  result = dlg(filters.c_str(), nullptr, &cpath);
+    nfdresult_t result;
+    if (parm.getMeta<string>("dialog", "open") == "save") {
+        result = NFD_SaveDialogU8(&cpath, nullptr, 0, nullptr, nullptr);
+    } else {
+        result = NFD_OpenDialogU8(&cpath, nullptr, 0, nullptr);
+    }
+    
     if (result == NFD_OKAY && cpath) {
       if (*cpath) {
         path = cpath;
@@ -61,7 +62,7 @@ bool inspectDirPath(Parm& parm)
   auto btlabel = "...##" + parm.path();
   if (ImGui::Button(btlabel.c_str())) {
     char* cpath  = nullptr;
-    auto  result = NFD_PickFolder(defaultpath.c_str(), &cpath);
+    auto  result = NFD_PickFolderU8(&cpath, defaultpath.empty() ? nullptr : defaultpath.c_str());
     if (result == NFD_OKAY && cpath) {
       if (*cpath) {
         path = cpath;

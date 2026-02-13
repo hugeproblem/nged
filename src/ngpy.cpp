@@ -858,7 +858,7 @@ void PyApp::init()
 
 // --------------------------------------- The Python Module --------------------------------------------------
 
-PYBIND11_MODULE(nged, m) {
+PYBIND11_MODULE(ngpy, m) {
   m.doc() = "NodeGraph Editor";
 
   parmscript::addExtensions();
